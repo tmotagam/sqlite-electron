@@ -1,0 +1,25 @@
+{
+  "name": "sqlite-electron",
+  "version": "1.0.0",
+  "description": "A module for electron to use sqlite3 without rebuilding",
+  "main": "sqlite-electron.js",
+  "scripts": {},
+  "author": "Motagamwala Taha Arif Ali",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "zeromq": "^6.0.0-beta.6"
+  },
+  "bundledDependencies": [
+    "zeromq"
+  ],
+  "keywords": [
+    "electron",
+    "Sqlite3",
+    "sqlite-electron",
+    "sqlite"
+  ],
+  "repository": {
+    "url": "https://github.com/tmotagam/sqlite-electron"
+  },
+  "devDependencies": {}
+}
