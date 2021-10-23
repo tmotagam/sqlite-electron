@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Demo</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+</head>
+<body>
+    <h1>sqlite-electron Demo</h1>
+    <p>
+        We are using Node.js <span id="node-version"></span>,
+        Chromium <span id="chrome-version"></span>,
+        and Electron <span id="electron-version"></span>.
+    </p>
+    <hr>
+    <br>
+    <label for="dbpath">Enter the path or name of the database</label>
+    <input id="dbpath" type="text">
+    <button onclick="window.api.path()">Enter path of the database</button>
+    <br>
+    <p id="pout"></p>
+    <hr>
+    <br>
+    <label for="singlequery">Enter the query eg 'SELECT * FROM sqlite_master'</label>
+    <input id="singlequery" type="text">
+    <br>
+    <br>
+    <label for="value">Enter the value in array eg ["name", 23, 2.5]</label>
+    <input id="value" type="text">
+    <br>
+    <br>
+    <label for="fetch">Enter value for fetch eg fetch 5 rows</label>
+    <input id="fetch" type="text">
+    <br>
+    <br>
+    <button onclick="window.api.equery()">Execute a Single query</button>
+    <br>
+    <p id="pout1"></p>
+    <hr>
+    <br>
+    <label for="query">Enter the query</label>
+    <input id="query" type="text">
+    <br>
+    <br>
+    <label for="values">Enter the values in 2d array eg [["n", 2, 2.5], [1, 2, 3]]</label>
+    <input id="values" type="text">
+    <br>
+    <br>
+    <button onclick="window.api.mquery()">Execute Multiple query</button>
+    <br>
+    <p id="pout2"></p>
+    <hr>
+    <br>
+    <label for="scriptPath">Enter the sql script path</label>
+    <input id="scriptPath" type="text">
+    <button onclick="window.api.escript()">Execute SQL Script</button>
+    <br>
+    <p id="pout3"></p>
+</body>
+</html>

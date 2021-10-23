@@ -1,101 +1,147 @@
-const zmq = require("zeromq");
-const { execFile,exec } = require('child_process')
+/*! *****************************************************************************
+sqlite-electron module for electron and nodejs
+Copyright (C) 2021  Motagamwala Taha Arif Ali
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+***************************************************************************** */
+
+/**
+ * Module for using sqlite3 in electron without rebuilding works only on win32
+ */
+const { execFile } = require('child_process');
 const path = require('path');
 
-const sock = new zmq.Request
+/**
+ * This is a internal function for detecting electron to get correct path
+ */
 
-async function init() {
-    var fullpath = __dirname + '\\sqlite-server.exe';
-    child = execFile(fullpath, (error) => {console.log(error)});
-
-    sock.connect("tcp://127.0.0.1:3000")
-    
-    await sock.send("init")
-    const [result] = await sock.receive()
-    let re = new TextDecoder("utf-8").decode(result);
-    return JSON.parse(re)
-}
-
-async function Connect(dataBasename = '', additionalPath = '') {
-    
-    if (additionalPath == '') {
-        fullpath = path.join(path.dirname(process.mainModule.filename), dataBasename);
-    } else {
-        fullpath = path.join(path.dirname(process.mainModule.filename), additionalPath, dataBasename);
-    }
-
-    await sock.send("Connect"+'~'+fullpath)
-    const [result] = await sock.receive()
-    let re = new TextDecoder("utf-8").decode(result);
-    return JSON.parse(re)
-}
-
-async function Close() {
-    await sock.send("Close")
-    const [result] = await sock.receive()
-    let re = new TextDecoder("utf-8").decode(result);
-    return JSON.parse(re)
-}
-
-async function executeQuery(Query = '', fetch = '', values = []) {
-    a = Query +'~'+ fetch +'~'+ values;
-    await sock.send("eQuery" +'~'+ a)
-    const [result] = await sock.receive()
-    let re = new TextDecoder("utf-8").decode(result);
-    return JSON.parse(re)
-}
-
-async function executeMany(Query = '', v = []) {
-    let i = 0;
-    let values = [];
-    while (i <= v.length-1) {
-        if (i == 0) {
-            values += v[i]
-        }else{
-            values += '/^/' + v[i]
+const electronNodeDetection = () => {
+    if (typeof process !== 'undefined' && typeof process.versions === 'object' && !!process.versions.electron) {
+        if (process.defaultApp) {
+            return path.join(path.dirname(require.main.filename), module.exports.dbPath);
+        } else {
+            return path.join(path.dirname(process.execPath), module.exports.dbPath);
         }
-        i+=1
+    } else {
+        return path.join(path.dirname(require.main.filename), module.exports.dbPath);
     }
-    a = Query +'~'+ values;
-    await sock.send("mQuery" +'~'+ a)
-    const [result] = await sock.receive()
-    let re = new TextDecoder("utf-8").decode(result);
-    return JSON.parse(re)
 }
 
-async function executeScript(scriptName = '') {
-    await sock.send("sQuery" +'~'+ scriptName)
-    const [result] = await sock.receive()
-    let re = new TextDecoder("utf-8").decode(result);
-    return JSON.parse(re)
+/**
+ * Executes a single query takes 3 parameters
+ * @param Query The string for the SQL queries eg: SELECT * FROM tables.
+ * @param fetch(Optional) This is used to specify whether the user wants all the values from the table or single value or multiple values eg: "all", 1, 2, 3, .., .
+ * @param values(Optional) This is used for specifing values to be sent with the SQL queries eg: ["name", 20000, "example street", 1234567890].
+ * @returns Either true or an array when fetch is specified also returns error string when something goes wrong.
+ */
+
+const executeQuery = (Query = '', fetch = '', values = []) => {
+    return new Promise((resolve, reject) => {
+        try {
+
+            const fullpath = electronNodeDetection()
+
+            let sqlitePath = __dirname + '\\sqlite.exe';
+            sqlite = execFile(sqlitePath);
+        
+            let string = '';
+        
+            sqlite.stdin.write(JSON.stringify(['executeQuery', fullpath, Query, fetch, values]))
+            sqlite.stdin.end()
+        
+            sqlite.stdout.on('data', (data) => {
+                string += data.toString()
+            })
+            
+            sqlite.stdout.on('end', () => {
+                sqlite.kill()
+                resolve(JSON.parse(string))
+            })
+        } catch (error) {
+            reject(error)
+        }
+    });
 }
 
-module.exports.init = init
-module.exports.Connect = Connect
-module.exports.Close = Close
+/**
+ * Executes a single query on multiple values
+ * @param Query The string for the SQL queries eg: SELECT * FROM tables.
+ * @param v This is used for specifing values to be sent with the SQL queries eg: [["name", 20000, "example street", 1234567890], ["name1", 20, "example street", 123]].
+ * @returns true or error string
+ */
+
+const executeMany = (Query = '', v = []) => {
+    return new Promise((resolve, reject) => {
+        try {
+
+            const fullpath = electronNodeDetection()
+
+            let sqlitePath = __dirname + '\\sqlite.exe';
+            sqlite = execFile(sqlitePath);
+        
+            let string = '';
+        
+            sqlite.stdout.on('data', (data) => {
+                string += data.toString()
+            })
+            
+            sqlite.stdout.on('end', () => {
+                sqlite.kill()
+                resolve(JSON.parse(string))
+            })
+            
+            sqlite.stdin.write(JSON.stringify(['executeMany', fullpath, Query, v]))
+            sqlite.stdin.end()
+        } catch (error) {
+            reject(error)
+        }
+    });
+}
+/**
+ * 
+ * @param scriptName The path of the SQL script to execute eg: ./scripts/myScript.sql .
+ * @returns true or error string
+ */
+const executeScript = (scriptName = '') => {
+    return new Promise((resolve, reject) => {
+        try {
+
+            const fullpath = electronNodeDetection()
+
+            let sqlitePath = __dirname + '\\sqlite.exe';
+            sqlite = execFile(sqlitePath);
+        
+            let string = '';
+        
+            sqlite.stdout.on('data', (data) => {
+                string += data.toString()
+            })
+            
+            sqlite.stdout.on('end', () => {
+                sqlite.kill()
+                resolve(JSON.parse(string))
+            })
+            
+            sqlite.stdin.write(JSON.stringify(['executeScript', fullpath, scriptName]))
+            sqlite.stdin.end()
+        } catch (error) {
+            reject(error)
+        }
+    });
+}
+
+module.exports.dbPath = ''
 module.exports.executeQuery = executeQuery
 module.exports.executeMany = executeMany
 module.exports.executeScript = executeScript
-
-function exitHandler(options) {
-    if (options.cleanup) {
-        exec('taskkill /F /T /IM sqlite-server.exe')
-    };
-    if (options.exit) process.exit();
-}
-
-//Exit when app is closing
-process.on('exit', exitHandler.bind(null,{cleanup:true, exit:true}));
-
-//catches ctrl+c event
-process.on('SIGINT', exitHandler.bind(null, {cleanup:true, exit:true}));
-
-// catches "kill pid" (for example: nodemon restart)
-process.on('SIGUSR1', exitHandler.bind(null, {cleanup:true, exit:true}));
-process.on('SIGUSR2', exitHandler.bind(null, {cleanup:true, exit:true}));
-
-//catches uncaught exceptions
-process.on('uncaughtException',err => {
-    console.error(err, 'Uncaught Exception thrown');
-    exitHandler.bind(null, {cleanup:true, exit:true});
-});
