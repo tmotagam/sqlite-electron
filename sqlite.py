@@ -1,6 +1,6 @@
 '''
 sqlite-electorn server executing the sql queries of the nodejs/electron processes
-Copyright (C) 2021  Motagamwala Taha Arif Ali
+Copyright (C) 2022  Motagamwala Taha Arif Ali
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ def executeQuery(db, sql, fetch, values):
     conn = connect(db)
     try:
         if fetch == 'all':
-            if values == []:
+            if type(values) is not list or values == []:
                 cursor = conn.execute(sql)
                 data = cursor.fetchall()
                 conn.commit()
@@ -50,7 +50,7 @@ def executeQuery(db, sql, fetch, values):
                 return data
 
         if fetch == '1':
-            if values == []:
+            if type(values) is not list or values == []:
                 cursor = conn.execute(sql)
                 data = cursor.fetchone()
                 conn.commit()
@@ -64,7 +64,7 @@ def executeQuery(db, sql, fetch, values):
                 return data
 
         if fetch == '':
-            if values == []:
+            if type(values) is not list or values == []:
                 cursor = conn.execute(sql)
                 conn.commit()
                 conn.close()
@@ -76,7 +76,7 @@ def executeQuery(db, sql, fetch, values):
                 return True
 
         else:
-            if values == []:
+            if type(values) is not list or values == []:
                 cursor = conn.execute(sql)
                 data = cursor.fetchmany(int(fetch))
                 conn.commit()
@@ -95,7 +95,7 @@ def executeQuery(db, sql, fetch, values):
 
 def executeMany(db, sql, values):
     '''
-    This function executes single queries on multiple value arrays return true or return error on exception
+    This function executes single query on multiple value arrays return true or return error on exception
     '''
     conn = connect(db)
     try:
@@ -123,7 +123,13 @@ def executeScript(db, sqlScript):
         return True
 
     except Exception as e:
-        return 'Error: ' + str(e)
+        try:
+            conn.executescript(sqlScript)
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            return 'Error: ' + str(e)
 
 def main():
     '''

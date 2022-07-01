@@ -11,10 +11,15 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^15.3.0",
-    "electron-packager": "^15.4.0"
+    "electron": "^19.0.6",
+    "electron-packager": "^15.5.1"
   },
   "dependencies": {
-    "sqlite-electron": "^2.0.0"
+    "sqlite-electron": "^2.0.5"
+  },
+  "browser": {
+    "fs": false,
+    "path": false,
+    "os": false
   }
 }

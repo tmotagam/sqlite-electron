@@ -1,6 +1,6 @@
 # Sqlite Electron
 
-Sqlite Electron is a module for electron and nodejs to use sqlite3 database without rebuilding as of now supports only Windows(win32).
+Sqlite Electron is a module for electron to use sqlite3 database without rebuilding as of now supports Windows(win32) (x64, x32) and Linux (x64).
 
 ## Installation
 
@@ -9,6 +9,11 @@ Use the package manager [npm](https://npmjs.com/) to install Sqlite Electron.
 ```bash
 npm install sqlite-electron
 ```
+
+## Note
+The package installs the prebuilt binaries of the sqlite on your system (if your system is supported) if you want any other platform binaries go to
+https://github.com/tmotagam/sqlite-electron/tree/master/binaries
+
 
 ## Functions
 
@@ -45,7 +50,7 @@ app.on('window-all-closed', () => {
 
 This is a exposed variable for setting the path of the new database and also for connecting to the existing database.
 
-Set this variable before using any of the 3 api.
+Set this variable before using any of the api.
 
 ```javascript
 const { app, BrowserWindow, ipcMain } = require('electron')
@@ -138,7 +143,7 @@ ipcMain.handle('executeMany', async (event, query, values) => {
 
 This is the function for executing multiple queries using sql scripts this function returns only true so never use any SELECT command in the sql scripts.
 
-You have to give absolute path of the script.
+You have to give absolute path of the script or give the script`s content directly as well.
 
 
 eg: script.sql
@@ -169,15 +174,17 @@ ipcMain.handle('databasePath', (event, dbPath) => {
 
 ipcMain.handle('executeScript', async (event, scriptpath) => {
   return await sqlite.executeScript(scriptpath);
+  // or
+  return await sqlite.executeScript('CREATE TABLE IF NOT EXISTS sqlite_main (ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,NAME TEXT NOT NULL,AGE INT NOT NULL,ADDRESS CHAR(50) NOT NULL,SALARY REAL NOT NULL);');
 })
 ```
 
 
 ## Example
-[See sqlite-electron in action using electron 15.3.0](https://github.com/tmotagam/sqlite-electron/tree/master/example)
+[See sqlite-electron in action using electron 19.0.6](https://github.com/tmotagam/sqlite-electron/tree/master/example)
 
 ## Contributing
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+Pull requests and issues are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 [Github](https://github.com/tmotagam/sqlite-electron)
 

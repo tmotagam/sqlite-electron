@@ -37,13 +37,25 @@ ipcMain.handle('potd', (event, dbPath) => {
 })
 
 ipcMain.handle('executeQuery', async (event, query, fetch, value) => {
-  return await sqlite.executeQuery(query, fetch, value);
+  try {
+    return await sqlite.executeQuery(query, fetch, value);
+  } catch (error) {
+    return error
+  }
 })
 
 ipcMain.handle('executeMany', async (event, query, values) => {
-  return await sqlite.executeMany(query, values)
+  try {
+    return await sqlite.executeMany(query, values)
+  } catch (error) {
+    return error
+  }
 })
 
 ipcMain.handle('executeScript', async (event, scriptpath) => {
-  return await sqlite.executeScript(scriptpath);
+  try {
+    return await sqlite.executeScript(scriptpath);
+  } catch (error) {
+    return error
+  }
 })
