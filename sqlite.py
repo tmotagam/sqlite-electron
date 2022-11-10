@@ -1,6 +1,6 @@
-'''
+"""
 sqlite-electorn server executing the sql queries of the nodejs/electron processes
-Copyright (C) 2022  Motagamwala Taha Arif Ali
+Copyright (C) 2022-2023  Motagamwala Taha Arif Ali
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -14,134 +14,157 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
 
 import sys, json, sqlite3
 
-def connect(db):
-    '''
+conn = None
+
+
+def newConnection(db):
+    """
     This is an Internal function used to connect to the database specified by the nodejs Process
     It takes the path of the database as parameter and returns true on connecting or returns error on exception
-    '''
+    """
     try:
-        conn = sqlite3.connect(db)
-        return conn
+        global conn
+        if conn == None:
+            conn = sqlite3.connect(db)
+            return True
+        else:
+            conn.close()
+            conn = sqlite3.connect(db)
+            return True
     except Exception as e:
-        return 'Error: ' + str(e)
+        return "Error: " + str(e)
 
-def executeQuery(db, sql, fetch, values):
-    '''
+
+def executeQuery(sql, fetch, values):
+    """
     This the function for executing the queries sent by the nodejs process and return true or arrays or error on exceptions
-    '''
-    conn = connect(db)
+    """
     try:
-        if fetch == 'all':
+        if conn == None:
+            raise "Connection not set up"
+        if fetch == "all":
             if type(values) is not list or values == []:
                 cursor = conn.execute(sql)
                 data = cursor.fetchall()
-                conn.commit()
-                conn.close()
+                cursor.close()
                 return data
             else:
                 cursor = conn.execute(sql, (values))
                 data = cursor.fetchall()
                 conn.commit()
-                conn.close()
+                cursor.close()
                 return data
 
-        if fetch == '1':
+        if fetch == "1":
             if type(values) is not list or values == []:
                 cursor = conn.execute(sql)
                 data = cursor.fetchone()
-                conn.commit()
-                conn.close()
+                cursor.close()
                 return data
             else:
                 cursor = conn.execute(sql, (values))
                 data = cursor.fetchone()
                 conn.commit()
-                conn.close()
+                cursor.close()
                 return data
 
-        if fetch == '':
+        if fetch == "":
             if type(values) is not list or values == []:
                 cursor = conn.execute(sql)
-                conn.commit()
-                conn.close()
+                cursor.close()
                 return True
             else:
                 cursor = conn.execute(sql, (values))
                 conn.commit()
-                conn.close()
+                cursor.close()
                 return True
 
         else:
             if type(values) is not list or values == []:
                 cursor = conn.execute(sql)
                 data = cursor.fetchmany(int(fetch))
-                conn.commit()
-                conn.close()
+                cursor.close()
                 return data
             else:
                 cursor = conn.execute(sql, (values))
                 data = cursor.fetchmany(int(fetch))
                 conn.commit()
-                conn.close()
+                cursor.close()
                 return data
 
     except Exception as e:
-        return 'Error: ' + str(e)
+        return "Error: " + str(e)
 
 
-def executeMany(db, sql, values):
-    '''
+def executeMany(sql, values):
+    """
     This function executes single query on multiple value arrays return true or return error on exception
-    '''
-    conn = connect(db)
+    """
     try:
+        if conn == None:
+            raise "Connection not set up"
         conn.executemany(sql, (values))
         conn.commit()
-        conn.close()
         return True
 
     except Exception as e:
-        return 'Error: ' + str(e)
+        return "Error: " + str(e)
 
 
-def executeScript(db, sqlScript):
-    '''
+def executeScript(sqlScript):
+    """
     This function executes sql scripts and returns true on success or error on exception
-    '''
-    conn = connect(db)
+    """
     try:
-        with open(sqlScript, 'r') as sql_file:
+        if conn == None:
+            raise "Connection not set up"
+        with open(sqlScript, "r") as sql_file:
             sql = sql_file.read()
 
         conn.executescript(sql)
         conn.commit()
-        conn.close()
         return True
 
     except Exception as e:
         try:
+            if conn == None:
+                raise "Connection not set up"
             conn.executescript(sqlScript)
             conn.commit()
-            conn.close()
             return True
         except Exception as e:
-            return 'Error: ' + str(e)
+            return "Error: " + str(e)
+
 
 def main():
-    '''
+    """
     The main driver function reading from the input send by nodejs process and executing the sql queries on the database returning the data in JSON format
-    '''
-    lines = sys.stdin.readlines()
-    why = json.loads(lines[0])
-    if why[0] == 'executeQuery':
-      print(json.dumps(executeQuery(why[1], why[2], why[3], why[4])))
-    elif why[0] == 'executeMany':
-        print(json.dumps(executeMany(why[1], why[2], why[3])))
-    elif why[0] == 'executeScript':
-        print(json.dumps(executeScript(why[1], why[2])))
+    """
+    while True:
+        line = []
+        while True:
+            lines = sys.stdin.read(1)
+            line.append(lines)
+            if lines == "\n":
+                break
+        a: str = "".join([str(item) for item in line])
+        why = json.loads(a)
+        if why[0] == "newConnection":
+            sys.stdout.write(f"{json.dumps(newConnection(why[1]))}EOF")
+            sys.stdout.flush()
+        elif why[0] == "executeQuery":
+            sys.stdout.write(f"{json.dumps(executeQuery(why[1], why[2], why[3]))}EOF")
+            sys.stdout.flush()
+        elif why[0] == "executeMany":
+            sys.stdout.write(f"{json.dumps(executeMany(why[1], why[2]))}EOF")
+            sys.stdout.flush()
+        elif why[0] == "executeScript":
+            sys.stdout.write(f"{json.dumps(executeScript(why[1]))}EOF")
+            sys.stdout.flush()
+
 
 main()

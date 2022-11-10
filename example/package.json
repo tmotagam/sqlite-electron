@@ -1,6 +1,6 @@
 {
   "name": "test",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -8,18 +8,18 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "Motagamwala Taha Arif Ali",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^19.0.6",
-    "electron-packager": "^15.5.1"
-  },
-  "dependencies": {
-    "sqlite-electron": "^2.0.5"
+    "electron": "^21.2.2",
+    "electron-packager": "^17.1.1"
   },
   "browser": {
     "fs": false,
     "path": false,
     "os": false
+  },
+  "dependencies": {
+    "sqlite-electron": "^2.2.3"
   }
 }

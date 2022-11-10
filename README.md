@@ -1,28 +1,50 @@
 # Sqlite Electron
 
-Sqlite Electron is a module for electron to use sqlite3 database without rebuilding as of now supports Windows(win32) (x64, x32) and Linux (x64).
+Sqlite Electron is a module for electron to use sqlite3 database without rebuilding it supports Windows(win32) (x64, x32) and Linux (x64). It now supports ESM and CJS 🎉.
 
 ## Installation
 
-Use the package manager [npm](https://npmjs.com/) to install Sqlite Electron.
+Use the package manager [npm](https://www.npmjs.com/package/sqlite-electron) to install Sqlite Electron.
 
 ```bash
 npm install sqlite-electron
 ```
+OR
 
-## Note
-The package installs the prebuilt binaries of the sqlite on your system (if your system is supported) if you want any other platform binaries go to
-https://github.com/tmotagam/sqlite-electron/tree/master/binaries
+Use the package manager [yarn](https://yarnpkg.com/package/sqlite-electron) to install Sqlite Electron.
+
+```bash
+yarn add sqlite-electron
+```
+
+## Notes
+1. The package installs the prebuilt binaries of the sqlite on your system (if your system is supported) if you want any other platform binaries for a specific version go to https://github.com/tmotagam/sqlite-electron/releases.
+
+2. The example written for this library is not a Boilerplate because of its disregards to the security required for electron so do not use it in your application.
+
+3. Never give values in the query string use values array for giving the values for the query not taking this precaution will result in sql injection attacks !.
+
+Good parctice example
+```javascript
+import { executeQuery } from 'sqlite-electron'
+executeQuery("INSERT INTO sqlite_main (NAME,AGE,ADDRESS,SALARY) VALUES (?, ?, ?, ?);", [var_name, var_age, var_address, var_salary]) // Do this
+```
+
+Bad parctice example:
+```javascript
+import { executeQuery } from 'sqlite-electron'
+executeQuery(`INSERT INTO sqlite_main (NAME,AGE,ADDRESS,SALARY) VALUES (${var_name}, ${var_age}, ${var_address}, ${var_salary});`) // Never do this
+```
 
 
-## Functions
+## API`s
 
-| Functions        | Description           |
+| Api        | Description           |
 | ---------------- |:---------------------:|
-| dbPath           | Variable to set your path for the database and also to connect to the database if it already exists         |
+| setdbPath(path='')          | It opens or creates the database for operation       |
 | executeQuery(Query = '', fetch = '', values = [])       | It Executes single query with fetch and values the fetch must be in string eg:- 'all', '1','2'... '' values must be array            |
 | executeMany(Query = '', values = [])      | It executes single query with multiple values |
-| executeScript(scriptName = '')      | It execute the sql script scriptName must be name of the script      |
+| executeScript(scriptName = '')      | It execute the sql script scriptName must be name of the script or the script itself     |
 
 ## Usage
 
@@ -46,11 +68,11 @@ app.on('window-all-closed', () => {
 })
 ```
 
-### dbPath
+### setdbPath
 
-This is a exposed variable for setting the path of the new database and also for connecting to the existing database.
+This is a function for opening a existing database or creating a new database for operation.
 
-Set this variable before using any of the api.
+Call this function before calling the other 3 functions.
 
 ```javascript
 const { app, BrowserWindow, ipcMain } = require('electron')
@@ -67,9 +89,30 @@ app.on('window-all-closed', () => {
     // Your Code
 })
 
-ipcMain.handle('databasePath', (event, dbPath) => {
-  sqlite.dbPath = dbPath
-  return true
+ipcMain.handle('databasePath', async (event, dbPath) => {
+  return await sqlite.setdbPath(dbPath)
+})
+```
+
+Now you can also create In-memory database like this.
+
+```javascript
+const { app, BrowserWindow, ipcMain } = require('electron')
+const sqlite = require('sqlite-electron')
+
+function createWindow () {
+    // Your Code
+}
+app.whenReady().then(() => {
+    // Your Code
+})
+
+app.on('window-all-closed', () => {
+    // Your Code
+})
+
+ipcMain.handle('createInMemoryDatabase', async() => {
+  return await sqlite.setdbPath(':memory:')
 })
 ```
 
@@ -77,10 +120,6 @@ ipcMain.handle('databasePath', (event, dbPath) => {
 
 This is the function for executing any single query eg: 'SELECT * FROM sqlite_main' you can give values through value array and tell the function to fetch data by specifying the fetch parameter eg: "all", 1, 2, 3, .., infinity.
 
-Note: Never give values in the query string use value array for giving the values for the query not taking this precaution will result in sql injection attacks !.
-
-eg: ("INSERT INTO sqlite_main (NAME,AGE,ADDRESS,SALARY) VALUES (?, ?, ?, ?);", ["name", 900, "example street", 123456789000]) // This is best practice
-
 ```javascript
 const { app, BrowserWindow, ipcMain } = require('electron')
 const sqlite = require('sqlite-electron')
@@ -96,9 +135,8 @@ app.on('window-all-closed', () => {
     // Your Code
 })
 
-ipcMain.handle('databasePath', (event, dbPath) => {
-  sqlite.dbPath = dbPath
-  return true
+ipcMain.handle('databasePath', async (event, dbPath) => {
+  return await sqlite.setdbPath(dbPath)
 })
 
 ipcMain.handle('executeQuery', async (event, query, fetch, value) => {
@@ -129,9 +167,8 @@ app.on('window-all-closed', () => {
     // Your Code
 })
 
-ipcMain.handle('databasePath', (event, dbPath) => {
-  sqlite.dbPath = dbPath
-  return true
+ipcMain.handle('databasePath', async (event, dbPath) => {
+  return await sqlite.setdbPath(dbPath)
 })
 
 ipcMain.handle('executeMany', async (event, query, values) => {
@@ -167,9 +204,8 @@ app.on('window-all-closed', () => {
     // Your Code
 })
 
-ipcMain.handle('databasePath', (event, dbPath) => {
-  sqlite.dbPath = dbPath
-  return true
+ipcMain.handle('databasePath', async (event, dbPath) => {
+  return await sqlite.setdbPath(dbPath)
 })
 
 ipcMain.handle('executeScript', async (event, scriptpath) => {
@@ -181,7 +217,7 @@ ipcMain.handle('executeScript', async (event, scriptpath) => {
 
 
 ## Example
-[See sqlite-electron in action using electron 19.0.6](https://github.com/tmotagam/sqlite-electron/tree/master/example)
+[See sqlite-electron in action using electron 21.0.1](https://github.com/tmotagam/sqlite-electron/tree/master/example)
 
 ## Contributing
 Pull requests and issues are welcome. For major changes, please open an issue first to discuss what you would like to change.

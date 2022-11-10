@@ -1,122 +1,188 @@
-import { execFile } from 'child_process';
-import { dirname, join } from 'path';
-import 'electron';
+import { ChildProcess, exec, execFile } from "child_process";
+import { dirname, join } from "path";
 
-const electronNodeDetection = (): string => {
-    if (typeof process !== 'undefined' && typeof process.versions === 'object' && !!process.versions.electron) {
-        if (process.defaultApp) {
-            return join(dirname(require.main.filename), module.exports.dbPath);
-        } else {
-            return join(dirname(process.execPath), module.exports.dbPath);
-        }
+async () => {
+  try {
+    await import("electron");
+  } catch (error) {}
+};
+
+let sqlite: ChildProcess | null = null;
+
+const electronNodeDetection = (path: string): string => {
+  if (
+    typeof process !== "undefined" &&
+    typeof process.versions === "object" &&
+    !!process.versions.electron &&
+    require.main !== undefined
+  ) {
+    if (process.defaultApp) {
+      return join(dirname(require.main.filename), path);
     } else {
-        return join(dirname(require.main.filename), module.exports.dbPath);
+      return join(dirname(process.execPath), path);
     }
-}
+  } else {
+    if (require.main !== undefined) {
+      return join(dirname(require.main.filename), path);
+    } else {
+      throw new Error("Cannot set path");
+    }
+  }
+};
 
-const executeQuery = (Query: string, fetch?: string, values?: (string | number | null | Buffer)[]): Promise<boolean | []> => {
-    return new Promise<boolean | []>((resolve, reject) => {
-        try {
+const exitHandler = (options: { exit: boolean; cleanup: boolean }) => {
+  if (options.cleanup) {
+    if (process.platform === "win32") {
+      exec(`taskkill /F /T /IM sqlite-win32-${process.arch}.exe`);
+    } else if (process.platform === "linux") {
+      exec(`killall -e sqlite-linux-${process.arch}`);
+    }
+  }
+  if (options.exit) process.exit();
+};
 
-            const fullpath = electronNodeDetection();
+const setdbPath = (path: string): Promise<boolean> => {
+  let dbPath: string = "";
+  if (path === ":memory:") {
+    dbPath = path;
+  } else {
+    dbPath = electronNodeDetection(path);
+  }
+  if (sqlite === null) {
+    let sqlitePath = "";
+    if (process.platform === "win32") {
+      sqlitePath = join(
+        __dirname,
+        "..",
+        `sqlite-${process.platform}-${process.arch}.exe`
+      );
+    } else {
+      sqlitePath = join(
+        __dirname,
+        "..",
+        `sqlite-${process.platform}-${process.arch}`
+      );
+    }
+    sqlite = execFile(sqlitePath);
+    if (sqlite !== null) {
+      //Exit when app is closing
+      process.on("exit", exitHandler.bind(null, { cleanup: true, exit: true }));
 
-            let sqlitePath = ''
+      //catches ctrl+c event
+      process.on(
+        "SIGINT",
+        exitHandler.bind(null, { cleanup: true, exit: true })
+      );
 
-            if (process.platform === 'win32') {
-                sqlitePath = join(__dirname, `sqlite-${process.platform}-${process.arch}.exe`)
-            }else {
-                sqlitePath = join(__dirname, `sqlite-${process.platform}-${process.arch}`)
-            }
-            const sqlite = execFile(sqlitePath);
+      // catches "kill pid" (for example: nodemon restart)
+      process.on(
+        "SIGUSR1",
+        exitHandler.bind(null, { cleanup: true, exit: true })
+      );
+      process.on(
+        "SIGUSR2",
+        exitHandler.bind(null, { cleanup: true, exit: true })
+      );
 
-            let string = '';
-
-            sqlite.stdin.write(JSON.stringify(['executeQuery', fullpath, Query, fetch, values]));
-            sqlite.stdin.end();
-
-            sqlite.stdout.on('data', (data) => {
-                string += data.toString();
-            });
-
-            sqlite.stdout.on('end', () => {
-                sqlite.kill();
-                resolve(JSON.parse(string));
-            });
-        } catch (error) {
-            reject(error);
+      //catches uncaught exceptions
+      process.on("uncaughtException", (err) => {
+        console.error(err, "Uncaught Exception thrown");
+        exitHandler.bind(null, { cleanup: true, exit: false });
+      });
+    }
+  }
+  return new Promise<boolean>((resolve, reject) => {
+    try {
+      if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
+        return reject("Sqlite not defined");
+      }
+      let string = "";
+      sqlite.stdin.write(`${JSON.stringify(["newConnection", dbPath])}\n`);
+      sqlite.stdout.on("data", (data) => {
+        string += data.toString();
+        if (string.substring(string.length - 3) === "EOF") {
+          if (JSON.parse(string.split("EOF")[0]) === true) {
+            resolve(true);
+          }
+          reject(JSON.parse(string.split("EOF")[0]));
         }
-    });
-}
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
 
-const executeMany = (Query: string, v: (string | number | null | Buffer)[]): Promise<boolean> => {
-    return new Promise<boolean>((resolve, reject) => {
-        try {
-
-            const fullpath = electronNodeDetection()
-
-            let sqlitePath = ''
-
-            if (process.platform === 'win32') {
-                sqlitePath = join(__dirname, `sqlite-${process.platform}-${process.arch}.exe`)
-            }else {
-                sqlitePath = join(__dirname, `sqlite-${process.platform}-${process.arch}`)
-            }
-            const sqlite = execFile(sqlitePath);
-        
-            let string = '';
-        
-            sqlite.stdout.on('data', (data) => {
-                string += data.toString()
-            })
-            
-            sqlite.stdout.on('end', () => {
-                sqlite.kill()
-                resolve(JSON.parse(string))
-            })
-            
-            sqlite.stdin.write(JSON.stringify(['executeMany', fullpath, Query, v]))
-            sqlite.stdin.end()
-        } catch (error) {
-            reject(error)
+const executeQuery = (
+  Query: string,
+  fetch?: string,
+  values?: (string | number | null | Buffer)[]
+): Promise<boolean | []> => {
+  return new Promise<boolean | []>((resolve, reject) => {
+    try {
+      if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
+        return reject("Sqlite not defined");
+      }
+      let string = "";
+      sqlite.stdout.on("data", (data) => {
+        string += data.toString();
+        if (string.substring(string.length - 3) === "EOF") {
+          resolve(JSON.parse(string.split("EOF")[0]));
         }
-    });
-}
+      });
+
+      sqlite.stdin.write(
+        `${JSON.stringify(["executeQuery", Query, fetch, values])}\n`
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+const executeMany = (
+  Query: string,
+  v: (string | number | null | Buffer)[]
+): Promise<boolean> => {
+  return new Promise<boolean>((resolve, reject) => {
+    try {
+      if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
+        return reject("Sqlite not defined");
+      }
+      let string = "";
+      sqlite.stdout.on("data", (data) => {
+        string += data.toString();
+        if (string.substring(string.length - 3) === "EOF") {
+          resolve(JSON.parse(string.split("EOF")[0]));
+        }
+      });
+
+      sqlite.stdin.write(JSON.stringify(["executeMany", Query, v]));
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
 
 const executeScript = (scriptName: string): Promise<Boolean> => {
-    return new Promise<Boolean>((resolve, reject) => {
-        try {
-
-            const fullpath = electronNodeDetection()
-
-            let sqlitePath = ''
-
-            if (process.platform === 'win32') {
-                sqlitePath = join(__dirname, `sqlite-${process.platform}-${process.arch}.exe`)
-            }else {
-                sqlitePath = join(__dirname, `sqlite-${process.platform}-${process.arch}`)
-            }
-            const sqlite = execFile(sqlitePath);
-        
-            let string = '';
-        
-            sqlite.stdout.on('data', (data) => {
-                string += data.toString()
-            })
-            
-            sqlite.stdout.on('end', () => {
-                sqlite.kill()
-                resolve(JSON.parse(string))
-            })
-            
-            sqlite.stdin.write(JSON.stringify(['executeScript', fullpath, scriptName]))
-            sqlite.stdin.end()
-        } catch (error) {
-            reject(error)
+  return new Promise<Boolean>((resolve, reject) => {
+    try {
+      if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
+        return reject("Sqlite not defined");
+      }
+      let string = "";
+      sqlite.stdout.on("data", (data) => {
+        string += data.toString();
+        if (string.substring(string.length - 3) === "EOF") {
+          resolve(JSON.parse(string.split("EOF")[0]));
         }
-    });
-}
+      });
 
-module.exports.dbPath = ''
-module.exports.executeQuery = executeQuery
-module.exports.executeMany = executeMany
-module.exports.executeScript = executeScript
+      sqlite.stdin.write(JSON.stringify(["executeScript", scriptName]));
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+export { setdbPath, executeQuery, executeMany, executeScript };

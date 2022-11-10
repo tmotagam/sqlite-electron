@@ -1,14 +1,21 @@
 {
   "name": "sqlite-electron",
-  "version": "2.0.5",
+  "version": "2.2.3",
   "description": "A module for electron to use sqlite3 without rebuilding",
-  "main": "sqlite-electron.js",
+  "main": "./cjs/sqlite-electron.js",
+  "module": "./esm.sqlite-electron.mjs",
+  "types": "./sqlite-electron.d.ts",
   "scripts": {
     "postinstall": "node ./scripts/postinstall.js"
   },
+  "exports": {
+    "import": "./esm/sqlite-electron.mjs",
+    "require": "./cjs/sqlite-electron.js"
+  },
   "author": "Motagamwala Taha Arif Ali",
   "files": [
-    "sqlite-electron.js",
+    "cjs",
+    "esm",
     "sqlite-electron.d.ts",
     "scripts"
   ],

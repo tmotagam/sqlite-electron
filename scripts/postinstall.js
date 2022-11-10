@@ -1,6 +1,6 @@
 /*
 Postinstall Script for sqlite-electron module
-Copyright (C) 2022  Motagamwala Taha Arif Ali
+Copyright (C) 2022-2023  Motagamwala Taha Arif Ali
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ const fs = require('fs');
 
 if (process.platform === 'win32') {
     const file = fs.createWriteStream(`./sqlite-${process.platform}-${process.arch}.exe`);
-    https.get(`https://raw.githubusercontent.com/tmotagam/sqlite-electron/master/binaries/sqlite-${process.platform}-${process.arch}.exe`, (response) => {
+    https.get(`https://github.com/tmotagam/sqlite-electron/releases/download/v2.2.3/sqlite-${process.platform}-${process.arch}.exe`, (response) => {
         if (response.statusCode === 200) {
             response.pipe(file);
             file.on("finish", () => {
@@ -29,14 +29,14 @@ if (process.platform === 'win32') {
                 console.log("Download Completed")
             });
         } else {
-            throw {code: response.statusCode, message: response.statusMessage, url: `https://raw.githubusercontent.com/tmotagam/sqlite-electron/master/binaries/sqlite-${process.platform}-${process.arch}.exe`}
+            throw { code: response.statusCode, message: response.statusMessage, url: `https://github.com/tmotagam/sqlite-electron/releases/download/v2.2.3/sqlite-${process.platform}-${process.arch}.exe` }
         }
     }).on("error", (e) => {
         throw e
     })
 } else {
     const file = fs.createWriteStream(`./sqlite-${process.platform}-${process.arch}`, { mode: 0o744 });
-    https.get(`https://raw.githubusercontent.com/tmotagam/sqlite-electron/master/binaries/sqlite-${process.platform}-${process.arch}`, (response) => {
+    https.get(`https://github.com/tmotagam/sqlite-electron/releases/download/v2.2.3/sqlite-${process.platform}-${process.arch}`, (response) => {
         if (response.statusCode === 200) {
             response.pipe(file);
             file.on("finish", () => {
@@ -44,7 +44,7 @@ if (process.platform === 'win32') {
                 console.log("Download Completed")
             });
         } else {
-            throw {code: response.statusCode, message: response.statusMessage, url: `https://raw.githubusercontent.com/tmotagam/sqlite-electron/master/binaries/sqlite-${process.platform}-${process.arch}`}
+            throw { code: response.statusCode, message: response.statusMessage, url: `https://github.com/tmotagam/sqlite-electron/releases/download/v2.2.3/sqlite-${process.platform}-${process.arch}` }
         }
     }).on("error", (e) => {
         throw e
