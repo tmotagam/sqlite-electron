@@ -20,6 +20,6 @@
     "os": false
   },
   "dependencies": {
-    "sqlite-electron": "^2.2.3"
+    "sqlite-electron": "^2.2.5"
   }
 }
