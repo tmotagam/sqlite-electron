@@ -1,6 +1,6 @@
 {
   "name": "sqlite-electron",
-  "version": "2.2.5",
+  "version": "2.2.8",
   "description": "A module for electron to use sqlite3 without rebuilding",
   "main": "./cjs/sqlite-electron.js",
   "module": "./esm.sqlite-electron.mjs",

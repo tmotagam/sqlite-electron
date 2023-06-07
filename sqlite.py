@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import array
 import sys, json, sqlite3
 
 conn = None
@@ -49,27 +50,63 @@ def executeQuery(sql, fetch, values):
         if fetch == "all":
             if type(values) is not list or values == []:
                 cursor = conn.execute(sql)
-                data = cursor.fetchall()
+                data = [list(ele) for ele in cursor.fetchall()]
                 cursor.close()
+                for i in range(0, data.__len__()):
+                    for j in range(0, data[i].__len__()):
+                        if type(data[i][j]) is bytes:
+                            data[i][j] = {"type": "Buffer", "data": list(data[i][j])}
+                        data[i][j] = data[i][j]
                 return data
             else:
+                for i in range(0, values.__len__()):
+                    try:
+                        v = json.loads(values[i])
+                        if type(v) is dict:
+                            if "data" in v and "type" in v:
+                                if v["type"] == "Buffer" and type(v["data"]) is list:
+                                    values[i] = array.array("B", v["data"])
+                    except Exception:
+                        pass
                 cursor = conn.execute(sql, (values))
-                data = cursor.fetchall()
+                data = [list(ele) for ele in cursor.fetchall()]
                 conn.commit()
                 cursor.close()
+                for i in range(0, data.__len__()):
+                    for j in range(0, data[i].__len__()):
+                        if type(data[i][j]) is bytes:
+                            data[i][j] = {"type": "Buffer", "data": list(data[i][j])}
+                        data[i][j] = data[i][j]
                 return data
 
         if fetch == "1":
             if type(values) is not list or values == []:
                 cursor = conn.execute(sql)
-                data = cursor.fetchone()
+                data = list(cursor.fetchone())
                 cursor.close()
+                for i in range(0, data.__len__()):
+                    if type(data[i]) is bytes:
+                        data[i] = {"type": "Buffer", "data": list(data[i])}
+                    data[i] = data[i]
                 return data
             else:
+                for i in range(0, values.__len__()):
+                    try:
+                        v = json.loads(values[i])
+                        if type(v) is dict:
+                            if "data" in v and "type" in v:
+                                if v["type"] == "Buffer" and type(v["data"]) is list:
+                                    values[i] = array.array("B", v["data"])
+                    except Exception:
+                        pass
                 cursor = conn.execute(sql, (values))
-                data = cursor.fetchone()
+                data = list(cursor.fetchone())
                 conn.commit()
                 cursor.close()
+                for i in range(0, data.__len__()):
+                    if type(data[i]) is bytes:
+                        data[i] = {"type": "Buffer", "data": list(data[i])}
+                    data[i] = data[i]
                 return data
 
         if fetch == "":
@@ -78,6 +115,15 @@ def executeQuery(sql, fetch, values):
                 cursor.close()
                 return True
             else:
+                for i in range(0, values.__len__()):
+                    try:
+                        v = json.loads(values[i])
+                        if type(v) is dict:
+                            if "data" in v and "type" in v:
+                                if v["type"] == "Buffer" and type(v["data"]) is list:
+                                    values[i] = array.array("B", v["data"])
+                    except Exception:
+                        pass
                 cursor = conn.execute(sql, (values))
                 conn.commit()
                 cursor.close()
@@ -86,14 +132,33 @@ def executeQuery(sql, fetch, values):
         else:
             if type(values) is not list or values == []:
                 cursor = conn.execute(sql)
-                data = cursor.fetchmany(int(fetch))
+                data = [list(ele) for ele in cursor.fetchmany(int(fetch))]
                 cursor.close()
+                for i in range(0, data.__len__()):
+                    for j in range(0, data[i].__len__()):
+                        if type(data[i][j]) is bytes:
+                            data[i][j] = {"type": "Buffer", "data": list(data[i][j])}
+                        data[i][j] = data[i][j]
                 return data
             else:
+                for i in range(0, values.__len__()):
+                    try:
+                        v = json.loads(values[i])
+                        if type(v) is dict:
+                            if "data" in v and "type" in v:
+                                if v["type"] == "Buffer" and type(v["data"]) is list:
+                                    values[i] = array.array("B", v["data"])
+                    except Exception:
+                        pass
                 cursor = conn.execute(sql, (values))
-                data = cursor.fetchmany(int(fetch))
+                data = [list(ele) for ele in cursor.fetchmany(int(fetch))]
                 conn.commit()
                 cursor.close()
+                for i in range(0, data.__len__()):
+                    for j in range(0, data[i].__len__()):
+                        if type(data[i][j]) is bytes:
+                            data[i][j] = {"type": "Buffer", "data": list(data[i][j])}
+                        data[i][j] = data[i][j]
                 return data
 
     except Exception as e:
@@ -107,6 +172,16 @@ def executeMany(sql, values):
     try:
         if conn == None:
             raise "Connection not set up"
+        for i in range(0, values.__len__()):
+            for j in range(0, values[i].__len__()):
+                try:
+                    v = json.loads(values[i][j])
+                    if type(v) is dict:
+                        if "data" in v and "type" in v:
+                            if v["type"] == "Buffer" and type(v["data"]) is list:
+                                values[i][j] = array.array("B", v["data"])
+                except Exception:
+                    pass
         conn.executemany(sql, (values))
         conn.commit()
         return True
@@ -151,7 +226,7 @@ def main():
             line.append(lines)
             if lines == "\n":
                 break
-        a: str = "".join([str(item) for item in line])
+        a = "".join([str(item) for item in line])
         why = json.loads(a)
         if why[0] == "newConnection":
             sys.stdout.write(f"{json.dumps(newConnection(why[1]))}EOF")

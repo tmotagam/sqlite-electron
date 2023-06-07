@@ -19,13 +19,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 /**
  * setdbPath function allows for connecting to the database.
  *
- * @param {string} path - A string param for path to database
- * @return {Promise<Boolean>} Promise of boolean is returned
+ * @param {string} path - Relative path of a database since it constructs absolute path by itself
+ * @return {Promise<Boolean>} boolean
  *
  * @example
  *
- *     setdbPath(path='/path/to/db/path.db')
- *     setdbPath(path=':memory:') // now supports In-memory database
+ *     setdbPath(path='./path/to/db/path.db')
+ *     setdbPath(path=':memory:') // In-memory database
  */
 
 export declare function setdbPath(path: string): Promise<Boolean>;
@@ -33,10 +33,10 @@ export declare function setdbPath(path: string): Promise<Boolean>;
 /**
  * executeQuery function executes only one query.
  *
- * @param {string} Query - A string param for SQL query
- * @param {string} [fetch] - A optional string param for fetching values from the table
- * @param {(string | number | null | Buffer)[]} [values] - A optional array param for values for a SQL query
- * @return {Promise<Boolean | []>} Promise of boolean or an array is returned if fetch is defined
+ * @param {string} Query - SQL query
+ * @param {string} [fetch] - An optional param for fetching values from the table
+ * @param {Array<string | number | null | Buffer>} [values] - An optional param for values used in a SQL query
+ * @return {Promise<Boolean | Array<any> | Array<Array<any>>>} Boolean or an array if fetch is defined
  *
  * @example
  *
@@ -47,35 +47,35 @@ export declare function setdbPath(path: string): Promise<Boolean>;
 export declare function executeQuery(
   Query: string,
   fetch?: string,
-  values?: (string | number | null | Buffer)[]
-): Promise<Boolean | []>;
+  values?: Array<string | number | null | Buffer>
+): Promise<Boolean | Array<any> | Array<Array<any>>>;
 
 /**
  * executeMany function executes only one query on multiple values useful for bulk write.
  *
- * @param {string} Query - A string param for SQL query
- * @param {(string | number | null | Buffer)[]} v - A array param for values for a SQL query
- * @return {Promise<Boolean>} Promise of boolean is returned
+ * @param {string} Query - SQL query
+ * @param {Array<Array<string | number | null | Buffer>>} v - A param for values used in a SQL query
+ * @return {Promise<Boolean>} boolean
  *
  * @example
  *
- *     executeQuery(Query='INSERT INTO sqlite_master (name, email, joining_date, salary) values(?,?,?,?)', fetch='', v=[['John Doe','example@sqlite-electron.com','1250-12-19',8000000], ['John Doe','example@sqlite-electron.com','1250-12-19',8000000]])
+ *     executeMany(Query='INSERT INTO sqlite_master (name, email, joining_date, salary) values(?,?,?,?)', v=[['John Doe','example@sqlite-electron.com','1250-12-19',8000000], ['John Doe','example@sqlite-electron.com','1250-12-19',8000000]])
  */
 
 export declare function executeMany(
   Query: string,
-  v: (string | number | null | Buffer)[]
+  v: Array<Array<string | number | null | Buffer>>
 ): Promise<boolean>;
 
 /**
  * executeScript function executes all the queries given in the sql script.
  *
  * @param {string} scriptName - A path param for sql script or sql script itself
- * @return {Promise<Boolean>} Promise of boolean is returned
+ * @return {Promise<Boolean>} boolean
  *
  * @example
  *
- *     executeScript(scriptName='./script.sql')
+ *     executeScript(scriptName='C://database//script.sql')
  *     executeScript(scriptName='CREATE TABLE IF NOT EXISTS comp (ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,NAME TEXT NOT NULL,AGE INT NOT NULL,ADDRESS CHAR(50) NOT NULL,SALARY REAL NOT NULL);')
  */
 
