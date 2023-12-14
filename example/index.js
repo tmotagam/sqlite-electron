@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const { join } = require("path");
-const { setdbPath, executeQuery, executeMany, executeScript } = require("sqlite-electron");
+const { setdbPath, executeQuery, executeMany, executeScript, fetchOne, fetchMany, fetchAll } = require("sqlite-electron");
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -30,17 +30,41 @@ app.on("window-all-closed", () => {
   }
 });
 
-ipcMain.handle("potd", async (event, dbPath) => {
+ipcMain.handle("potd", async (event, dbPath, isuri) => {
   try {
-    return await setdbPath(dbPath)
+    return await setdbPath(dbPath, isuri)
   } catch (error) {
     return error
   }
 });
 
-ipcMain.handle("executeQuery", async (event, query, fetch, value) => {
+ipcMain.handle("executeQuery", async (event, query, value) => {
   try {
-    return await executeQuery(query, fetch, value);
+    return await executeQuery(query, value);
+  } catch (error) {
+    return error;
+  }
+});
+
+ipcMain.handle("fetchone", async (event, query, value) => {
+  try {
+    return await fetchOne(query, value);
+  } catch (error) {
+    return error;
+  }
+});
+
+ipcMain.handle("fetchmany", async (event, query, size, value) => {
+  try {
+    return await fetchMany(query, size, value);
+  } catch (error) {
+    return error;
+  }
+});
+
+ipcMain.handle("fetchall", async (event, query, value) => {
+  try {
+    return await fetchAll(query, value);
   } catch (error) {
     return error;
   }

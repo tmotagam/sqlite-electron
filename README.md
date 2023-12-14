@@ -2,7 +2,17 @@
 
 Sqlite Electron is a module for electron to use sqlite3 database without rebuilding it supports Windows (x64, x32) and Linux (x64). It supports ESM and CJS.
 
-Several bugs fixed and now all data types are supported
+Changes:
+
+* The setdbPath now supports the [SQLite URI](https://www.sqlite.org/uri.html)
+
+* The executeQuery API has been changed.
+
+* The fetch API has been added for fetching the data from the database.
+
+* The fetch API will now return the data in the object format where the keys will be column and the values will be the data point for that column in the database.
+
+* Also when using typescript you can define the type of the object that will be returned when using the fetch API.
 
 ## Installation
 
@@ -51,10 +61,13 @@ executeQuery(
 
 | Api                                               |                                                        Description                                                        |
 | ------------------------------------------------- | :-----------------------------------------------------------------------------------------------------------------------: |
-| setdbPath(path='')                                |                                      It opens or creates the database for operation                                       |
-| executeQuery(Query = '', fetch = '', values = []) | It Executes single query with fetch and values the fetch must be in string eg:- 'all', '1','2'... '' values must be array |
-| executeMany(Query = '', values = [])              |                                       It executes single query with multiple values                                       |
-| executeScript(scriptName = '')                    |                   It execute the sql script scriptName must be name of the script or the script itself                    |
+| setdbPath(path='', isuri=false)                                |                                      It opens or creates the database for operation now supports the InMemory database and also SQLite URI format                                       |
+| executeQuery(query = '', values = []) | It Executes single query with values they must be array |
+| executeMany(query = '', values = [])              |                                       It executes single query with multiple values                                       |
+| executeScript(scriptname = '')                    |                   It execute the sql script scriptName must be name of the script or the script itself                    |
+| fetchAll(query = '', values = [])                    |                   It fetches all the values that matches the query. The values can also be given for the query using values array                    |
+| fetchOne(query = '', values = [])                    |                       It fetches only one value that matches the query. The values can also be given for the query using values array                |
+| fetchMany(query = '', size = 5 values = [])                    |                   It fetches as many values as defined in size parameter that matches the query. The values can also be given for the query using values array                    |
 
 ## Usage
 
@@ -82,7 +95,7 @@ app.on("window-all-closed", () => {
 
 This is a function for opening a existing database or creating a new database for operation.
 
-Call this function before calling the other 3 functions.
+Call this function before calling the other 6 functions.
 
 ```javascript
 const { app, BrowserWindow, ipcMain } = require("electron");
@@ -104,7 +117,7 @@ ipcMain.handle("databasePath", async (event, dbPath) => {
 });
 ```
 
-Now you can also create In-memory database like this.
+You can create an In-memory database like this.
 
 ```javascript
 const { app, BrowserWindow, ipcMain } = require("electron");
@@ -126,9 +139,31 @@ ipcMain.handle("createInMemoryDatabase", async () => {
 });
 ```
 
+Now you can also use the SQLite URI format like this.
+
+```javascript
+const { app, BrowserWindow, ipcMain } = require("electron");
+const sqlite = require("sqlite-electron");
+
+function createWindow() {
+  // Your Code
+}
+app.whenReady().then(() => {
+  // Your Code
+});
+
+app.on("window-all-closed", () => {
+  // Your Code
+});
+
+ipcMain.handle("createDatabaseusingURI", async () => {
+  return await sqlite.setdbPath("file:tutorial.db?mode:rw", isuri=true);
+});
+```
+
 ### executeQuery
 
-This is the function for executing any single query eg: 'SELECT \* FROM sqlite_main' you can give values through value array and tell the function to fetch data by specifying the fetch parameter eg: "all", 1, 2, 3, .., infinity.
+This is the function for executing any single query eg: 'INSERT INTO tutorial (x) VALUES (?)' you can give values through the values array.
 
 ```javascript
 const { app, BrowserWindow, ipcMain } = require("electron");
@@ -149,8 +184,92 @@ ipcMain.handle("databasePath", async (event, dbPath) => {
   return await sqlite.setdbPath(dbPath);
 });
 
-ipcMain.handle("executeQuery", async (event, query, fetch, value) => {
-  return await sqlite.executeQuery(query, fetch, value);
+ipcMain.handle("executeQuery", async (event, query, values) => {
+  return await sqlite.executeQuery(query, values);
+});
+```
+
+### fetchAll
+
+This is the function for fetching all the rows that can be retrived using the given query eg: 'SELECT \* from tutorial' you can give values through the values array they will return the data in the Object format like this [{name: 'b', ...}, {name: 'a', ...}, {name: 'c', ...}].
+
+```javascript
+const { app, BrowserWindow, ipcMain } = require("electron");
+const sqlite = require("sqlite-electron");
+
+function createWindow() {
+  // Your Code
+}
+app.whenReady().then(() => {
+  // Your Code
+});
+
+app.on("window-all-closed", () => {
+  // Your Code
+});
+
+ipcMain.handle("databasePath", async (event, dbPath) => {
+  return await sqlite.setdbPath(dbPath);
+});
+
+ipcMain.handle("fetchAll", async (event, query, values) => {
+  return await sqlite.fetchAll(query, values);
+});
+```
+
+### fetchOne
+
+This is the function for fetching only one row that can be retrived using the given query eg: 'SELECT \* from tutorial WHERE ID=?' you can give values through the values array they will return the data in the Object format like this {name: 'a', ...}.
+
+```javascript
+const { app, BrowserWindow, ipcMain } = require("electron");
+const sqlite = require("sqlite-electron");
+
+function createWindow() {
+  // Your Code
+}
+app.whenReady().then(() => {
+  // Your Code
+});
+
+app.on("window-all-closed", () => {
+  // Your Code
+});
+
+ipcMain.handle("databasePath", async (event, dbPath) => {
+  return await sqlite.setdbPath(dbPath);
+});
+
+ipcMain.handle("fetchOne", async (event, query, values) => {
+  return await sqlite.fetchOne(query, values);
+});
+```
+
+### fetchMany
+
+This is the function for fetching as many rows as the size parameter allows that can be retrived using the given query eg: 'SELECT \* from tutorial WHERE name=?' you can give values through the values array they will return the data in the Object format like this [{name: 'a', ...}, {name: 'a', ...}, {name: 'a', ...}].
+
+```javascript
+const { app, BrowserWindow, ipcMain } = require("electron");
+const sqlite = require("sqlite-electron");
+
+function createWindow() {
+  // Your Code
+}
+app.whenReady().then(() => {
+  // Your Code
+});
+
+app.on("window-all-closed", () => {
+  // Your Code
+});
+
+ipcMain.handle("databasePath", async (event, dbPath) => {
+  return await sqlite.setdbPath(dbPath);
+});
+
+ipcMain.handle("fetchMany", async (event, query, size, values) => {
+  return await sqlite.fetchMany(query, size, values);
 });
 ```
 
@@ -159,8 +278,6 @@ ipcMain.handle("executeQuery", async (event, query, fetch, value) => {
 This is the function for executing query with multiple values.
 
 eg: ("INSERT INTO sqlite_main (NAME,AGE,ADDRESS,SALARY) VALUES (?, ?, ?, ?)", [["Pa", 32, "California", 20000.00], ["Pau", 32, "California", 20000.00], ["P", 32, "California", 20000.00], ["l", 32, "California", 20000.00]]) .
-
-Fetch is not available in this function
 
 ```javascript
 const { app, BrowserWindow, ipcMain } = require("electron");
@@ -228,7 +345,7 @@ ipcMain.handle("executeScript", async (event, scriptpath) => {
 
 ## Example
 
-[See sqlite-electron in action using electron 25.0.1](https://github.com/tmotagam/sqlite-electron/tree/master/example)
+[See sqlite-electron in action using electron 28.0.0](https://github.com/tmotagam/sqlite-electron/tree/master/example)
 
 ## Contributing
 

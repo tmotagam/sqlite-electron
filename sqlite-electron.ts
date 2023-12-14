@@ -1,10 +1,11 @@
 import { ChildProcess, execFile } from "child_process";
 import { dirname, join } from "path";
+import { Type } from "typescript";
 
 async () => {
   try {
     await import("electron");
-  } catch (error) {}
+  } catch (error) { }
 };
 
 let sqlite: ChildProcess | null = null;
@@ -36,9 +37,11 @@ const exitHandler = () => {
   }
 };
 
-const setdbPath = async (path: string): Promise<boolean> => {
+const setdbPath = async (path: string, isuri = false): Promise<boolean> => {
   let dbPath: string = "";
   if (path === ":memory:") {
+    dbPath = path;
+  } else if (isuri) {
     dbPath = path;
   } else {
     dbPath = electronNodeDetection(path);
@@ -60,7 +63,7 @@ const setdbPath = async (path: string): Promise<boolean> => {
         `sqlite-${process.platform}-${process.arch}`
       );
     }
-    sqlite = execFile(sqlitePath);
+    sqlite = execFile(sqlitePath, { maxBuffer: 10 * 1024 * 1024 });
     if (sqlite !== null) {
       //Exit when app is closing
       process.on("exit", exitHandler.bind(null));
@@ -78,140 +81,268 @@ const setdbPath = async (path: string): Promise<boolean> => {
       });
     }
   }
-  if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
-    throw "Sqlite not defined";
-  }
-  let string = "";
-  sqlite.stdin.write(`${JSON.stringify(["newConnection", dbPath])}\n`);
-  for await (const chunk of sqlite.stdout) {
-    string += chunk;
-    if (string.substring(string.length - 3) === "EOF") {
-      break;
+  return new Promise((resolve, reject) => {
+    try {
+      if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
+        return reject("Sqlite not defined");
+      }
+      let string = "";
+      const onData = (data: Buffer) => {
+        string += data.toString();
+        if (string.substring(string.length - 3) === "EOF") {
+          resolve(JSON.parse(string.split("EOF")[0]));
+          sqlite.stdout.off("data", onData);
+        }
+      };
+      sqlite.stdout.on("data", onData);
+      sqlite.stdin.write(
+        `${JSON.stringify(["newConnection", dbPath, isuri])}\n`,
+      );
+    } catch (error) {
+      reject(error);
     }
-  }
-  if (JSON.parse(string.split("EOF")[0]) === true) {
-    return true;
-  }
-  throw JSON.parse(string.split("EOF")[0]);
+  });
 };
 
 const executeQuery = async (
-  Query: string,
-  fetch: string = "",
+  query: string,
   values: Array<string | number | null | Buffer> = []
-): Promise<Boolean | Array<any> | Array<Array<any>>> => {
-  if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
-    throw "Sqlite not defined";
-  }
-  let string = "";
-
-  if (values !== undefined) {
-    const l = values.length;
-    for (let i = 0; i < l; i++) {
-      if (!Buffer.isBuffer(values[i])) {
-        continue;
+): Promise<Boolean> => {
+  return new Promise((resolve, reject) => {
+    try {
+      if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
+        return reject("Sqlite not defined");
       }
-      values[i] = JSON.stringify(values[i]);
-    }
-  }
-
-  sqlite.stdin.write(
-    `${JSON.stringify(["executeQuery", Query, fetch, values])}\n`
-  );
-  for await (const chunk of sqlite.stdout) {
-    string += chunk;
-    if (string.substring(string.length - 3) === "EOF") {
-      break;
-    }
-  }
-  const d = JSON.parse(string.split("EOF")[0]);
-  if (typeof d !== "boolean") {
-    if (Array.isArray(d[0])) {
-      for (let i = 0; i < d.length; i++) {
-        const de = d[i];
-        for (let i = 0; i < de.length; i++) {
-          const element = de[i];
-          if (
-            typeof element === "object" &&
-            !Array.isArray(element) &&
-            element !== null &&
-            element.type == "Buffer" &&
-            Array.isArray(element.data)
-          ) {
-            de[i] = Buffer.from(element.data);
-          }
+      let string = "";
+      const onData = (data: Buffer) => {
+        string += data.toString();
+        if (string.substring(string.length - 3) === "EOF") {
+          resolve(JSON.parse(string.split("EOF")[0]));
+          sqlite.stdout.off("data", onData);
         }
-      }
-    } else {
-      for (let i = 0; i < d.length; i++) {
-        const element = d[i];
-        if (
-          typeof element === "object" &&
-          !Array.isArray(element) &&
-          element !== null &&
-          element.type == "Buffer" &&
-          Array.isArray(element.data)
-        ) {
-          d[i] = Buffer.from(element.data);
+      };
+
+      sqlite.stdout.on("data", onData);
+      for (let i = 0; i < values.length; i++) {
+        if (!Buffer.isBuffer(values[i])) {
+          continue;
         }
+        values[i] = JSON.stringify(values[i]);
       }
+      sqlite.stdin.write(
+        `${JSON.stringify(["executeQuery", query, values])}\n`,
+      );
+    } catch (error) {
+      reject(error);
     }
-  }
-  if (string.startsWith('"Error: ')) {
-    throw d;
-  } else {
-    return d;
-  }
+  });
 };
+
+const fetchAll = async (query: string, values: Array<string | number | null | Buffer> = []): Promise<Array<Type>> => {
+  return new Promise((resolve, reject) => {
+    try {
+      if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
+        return reject("Sqlite not defined");
+      }
+      let string = "";
+      const onData = (data: Buffer) => {
+        string += data.toString();
+        if (string.substring(string.length - 3) === "EOF") {
+          const d = JSON.parse(string.split("EOF")[0]);
+          for (let i = 0; i < d.length; i++) {
+            const de = d[i];
+            Object.keys(de).forEach((i) => {
+              const element = de[i];
+              if (
+                typeof element === "object" &&
+                !Array.isArray(element) &&
+                element !== null &&
+                element.type == "Buffer" &&
+                Array.isArray(element.data)
+              ) {
+                de[i] = Buffer.from(element.data);
+              }
+            });
+          }
+          if (string.startsWith('"Error: ')) {
+            reject(d);
+          } else {
+            resolve(d);
+          }
+          sqlite.stdout.off("data", onData);
+        }
+      };
+
+      sqlite.stdout.on("data", onData);
+      for (let i = 0; i < values.length; i++) {
+        if (!Buffer.isBuffer(values[i])) {
+          continue;
+        }
+        values[i] = JSON.stringify(values[i]);
+      }
+      sqlite.stdin.write(
+        `${JSON.stringify(["fetchall", query, values])}\n`,
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+const fetchOne = async (query: string, values: Array<string | number | null | Buffer> = []): Promise<Type> => {
+  return new Promise((resolve, reject) => {
+    try {
+      if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
+        return reject("Sqlite not defined");
+      }
+      let string = "";
+      const onData = (data: Buffer) => {
+        string += data.toString();
+        if (string.substring(string.length - 3) === "EOF") {
+          const d = JSON.parse(string.split("EOF")[0]);
+          Object.keys(d).forEach((key) => {
+            const element = d[key];
+            if (
+              typeof element === "object" &&
+              !Array.isArray(element) &&
+              element !== null &&
+              element.type == "Buffer" &&
+              Array.isArray(element.data)
+            ) {
+              d[key] = Buffer.from(element.data);
+            }
+          });
+          if (string.startsWith('"Error: ')) {
+            reject(d);
+          } else {
+            resolve(d);
+          }
+          sqlite.stdout.off("data", onData);
+        }
+      };
+
+      sqlite.stdout.on("data", onData);
+      for (let i = 0; i < values.length; i++) {
+        if (!Buffer.isBuffer(values[i])) {
+          continue;
+        }
+        values[i] = JSON.stringify(values[i]);
+      }
+      sqlite.stdin.write(
+        `${JSON.stringify(["fetchone", query, values])}\n`,
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+const fetchMany = async (query: string, size: number, values: Array<string | number | null | Buffer> = []): Promise<Array<Type>> => {
+  return new Promise((resolve, reject) => {
+    try {
+      if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
+        return reject("Sqlite not defined");
+      }
+      let string = "";
+      const onData = (data: Buffer) => {
+        string += data.toString();
+        if (string.substring(string.length - 3) === "EOF") {
+          const d = JSON.parse(string.split("EOF")[0]);
+          for (let i = 0; i < d.length; i++) {
+            const de = d[i];
+            Object.keys(de).forEach((i) => {
+              const element = de[i];
+              if (
+                typeof element === "object" &&
+                !Array.isArray(element) &&
+                element !== null &&
+                element.type == "Buffer" &&
+                Array.isArray(element.data)
+              ) {
+                de[i] = Buffer.from(element.data);
+              }
+            });
+          }
+          if (string.startsWith('"Error: ')) {
+            reject(d);
+          } else {
+            resolve(d);
+          }
+          sqlite.stdout.off("data", onData);
+        }
+      };
+
+      sqlite.stdout.on("data", onData);
+      for (let i = 0; i < values.length; i++) {
+        if (!Buffer.isBuffer(values[i])) {
+          continue;
+        }
+        values[i] = JSON.stringify(values[i]);
+      }
+      sqlite.stdin.write(
+        `${JSON.stringify(["fetchmany", query, size, values])}\n`,
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
 
 const executeMany = async (
-  Query: string,
-  v: Array<Array<string | number | null | Buffer>>
+  query: string,
+  values: Array<Array<string | number | null | Buffer>>
 ): Promise<boolean> => {
-  if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
-    throw "Sqlite not defined";
-  }
-  let string = "";
-
-  const l = v.length;
-  for (let i = 0; i < l; i++) {
-    const sl = v[i].length;
-    for (let j = 0; j < sl; j++) {
-      if (!Buffer.isBuffer(v[i][j])) {
-        continue;
+  return new Promise((resolve, reject) => {
+    try {
+      if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
+        return reject("Sqlite not defined");
       }
-      v[i][j] = JSON.stringify(v[i][j]);
+      let string = "";
+      const onData = (data: Buffer) => {
+        string += data.toString();
+        if (string.substring(string.length - 3) === "EOF") {
+          resolve(JSON.parse(string.split("EOF")[0]));
+          sqlite.stdout.off("data", onData);
+        }
+      };
+
+      sqlite.stdout.on("data", onData);
+      for (let i = 0; i < values.length; i++) {
+        for (let j = 0; j < values[i].length; j++) {
+          if (!Buffer.isBuffer(values[i][j])) {
+            continue;
+          }
+          values[i][j] = JSON.stringify(values[i][j]);
+        }
+      }
+      sqlite.stdin.write(`${JSON.stringify(["executeMany", query, values])}\n`);
+    } catch (error) {
+      reject(error);
     }
-  }
-  sqlite.stdin.write(`${JSON.stringify(["executeMany", Query, v])}\n`);
-  for await (const chunk of sqlite.stdout) {
-    string += chunk;
-    if (string.substring(string.length - 3) === "EOF") {
-      break;
-    }
-  }
-  if (JSON.parse(string.split("EOF")[0]) === true) {
-    return true;
-  }
-  throw JSON.parse(string.split("EOF")[0]);
+  });
 };
 
-const executeScript = async (scriptName: string): Promise<Boolean> => {
-  if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
-    throw "Sqlite not defined";
-  }
-  let string = "";
-  sqlite.stdin.write(`${JSON.stringify(["executeScript", scriptName])}\n`);
-  for await (const chunk of sqlite.stdout) {
-    string += chunk;
-    if (string.substring(string.length - 3) === "EOF") {
-      break;
+const executeScript = async (scriptname: string): Promise<Boolean> => {
+  return new Promise((resolve, reject) => {
+    try {
+      if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
+        return reject("Sqlite not defined");
+      }
+      let string = "";
+      const onData = (data: Buffer) => {
+        string += data.toString();
+        if (string.substring(string.length - 3) === "EOF") {
+          resolve(JSON.parse(string.split("EOF")[0]));
+          sqlite.stdout.off("data", onData);
+        }
+      };
+
+      sqlite.stdout.on("data", onData);
+      sqlite.stdin.write(`${JSON.stringify(["executeScript", scriptname])}\n`);
+    } catch (error) {
+      reject(error);
     }
-  }
-  if (JSON.parse(string.split("EOF")[0]) === true) {
-    return true;
-  }
-  throw JSON.parse(string.split("EOF")[0]);
+  });
 };
 
-export { setdbPath, executeQuery, executeMany, executeScript };
+export { setdbPath, executeQuery, fetchOne, fetchMany, fetchAll, executeMany, executeScript };

@@ -14,8 +14,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 contextBridge.exposeInMainWorld('api', {
   path: async () => {
     const path = document.getElementById('dbpath').value
+    const isuri = document.getElementById('isuri').checked
     try {
-      const res = await ipcRenderer.invoke('potd', path)
+      const res = await ipcRenderer.invoke('potd', path, isuri);
       document.getElementById('pout').innerText = 'Output: ' + res;
     } catch (error) {
       document.getElementById('pout').innerText = 'Output: ' + error;
@@ -23,14 +24,47 @@ contextBridge.exposeInMainWorld('api', {
   },
   equery: async () => {
     const query = document.getElementById('singlequery').value
-    const fetch = document.getElementById('fetch').value
     const values = document.getElementById('value').value
     try {
       const arr = JSON.parse("[" + values + "]");
-      const res = await ipcRenderer.invoke('executeQuery', query, fetch, arr[0]);
+      const res = await ipcRenderer.invoke('executeQuery', query, arr[0]);
       document.getElementById('pout1').innerText = 'Output: ' + res;
     } catch (error) {
       document.getElementById('pout1').innerText = 'Output: ' + error;
+    }
+  },
+  fetchall: async () => {
+    const query = document.getElementById('fetchallquery').value
+    const values = document.getElementById('fetchallvalue').value
+    try {
+      const arr = JSON.parse("[" + values + "]");
+      const res = await ipcRenderer.invoke('fetchall', query, arr[0]);
+      document.getElementById('poutfa').innerText = 'Output: ' + JSON.stringify(res);
+    } catch (error) {
+      document.getElementById('poutfa').innerText = 'Output: ' + error;
+    }
+  },
+  fetchone: async () => {
+    const query = document.getElementById('fetchonequery').value
+    const values = document.getElementById('fetchonevalue').value
+    try {
+      const arr = JSON.parse("[" + values + "]");
+      const res = await ipcRenderer.invoke('fetchone', query, arr[0]);
+      document.getElementById('poutfo').innerText = 'Output: ' + JSON.stringify(res);
+    } catch (error) {
+      document.getElementById('poutfo').innerText = 'Output: ' + error;
+    }
+  },
+  fetchmany: async () => {
+    const query = document.getElementById('fetchmanyquery').value
+    const values = document.getElementById('fetchmanyvalue').value
+    const size = Number(document.getElementById('fetchmanysize').value)
+    try {
+      const arr = JSON.parse("[" + values + "]");
+      const res = await ipcRenderer.invoke('fetchmany', query, size, arr[0]);
+      document.getElementById('poutfm').innerText = 'Output: ' + JSON.stringify(res);
+    } catch (error) {
+      document.getElementById('poutfm').innerText = 'Output: ' + error;
     }
   },
   mquery: async () => {

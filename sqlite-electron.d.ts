@@ -1,6 +1,6 @@
 /*
 Types for sqlite-electron modules
-Copyright (C) 2022-2023  Motagamwala Taha Arif Ali
+Copyright (C) 2020-2024  Motagamwala Taha Arif Ali
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,63 +20,100 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * setdbPath function allows for connecting to the database.
  *
  * @param {string} path - Relative path of a database since it constructs absolute path by itself
+ * @param {boolean} isuri - true if path is a URL
  * @return {Promise<Boolean>} boolean
  *
  * @example
  *
  *     setdbPath(path='./path/to/db/path.db')
  *     setdbPath(path=':memory:') // In-memory database
+ *     setdbPath(path='file:tutorial.db?mode=ro', isuri=true) // Opening read-only database using SQLite URI
  */
-
-export declare function setdbPath(path: string): Promise<Boolean>;
+export declare function setdbPath(path: string, isuri?: boolean): Promise<Boolean>;
 
 /**
  * executeQuery function executes only one query.
  *
- * @param {string} Query - SQL query
- * @param {string} [fetch] - An optional param for fetching values from the table
- * @param {Array<string | number | null | Buffer>} [values] - An optional param for values used in a SQL query
- * @return {Promise<Boolean | Array<any> | Array<Array<any>>>} Boolean or an array if fetch is defined
- *
- * @example
- *
- *     executeQuery(Query='SELECT * FROM sqlite_master', fetch='all')
- *     executeQuery(Query='INSERT INTO sqlite_master (name, email, joining_date, salary) values(?,?,?,?)', fetch='', values=['John Doe','example@sqlite-electron.com','1250-12-19',8000000])
- */
-
-export declare function executeQuery(
-  Query: string,
-  fetch?: string,
-  values?: Array<string | number | null | Buffer>
-): Promise<Boolean | Array<any> | Array<Array<any>>>;
-
-/**
- * executeMany function executes only one query on multiple values useful for bulk write.
- *
- * @param {string} Query - SQL query
- * @param {Array<Array<string | number | null | Buffer>>} v - A param for values used in a SQL query
+ * @param {string} query - SQL query
+ * @param {Array<string | number | null | Buffer>} values - An optional param for values used in a SQL query
  * @return {Promise<Boolean>} boolean
  *
  * @example
  *
- *     executeMany(Query='INSERT INTO sqlite_master (name, email, joining_date, salary) values(?,?,?,?)', v=[['John Doe','example@sqlite-electron.com','1250-12-19',8000000], ['John Doe','example@sqlite-electron.com','1250-12-19',8000000]])
+ *     executeQuery(query='CREATE TABLE sqlite_master (name, email, joining_date, salary)')
+ *     executeQuery(query='INSERT INTO sqlite_master (name, email, joining_date, salary) values(?,?,?,?)', values=['John Doe','example@sqlite-electron.com','1250-12-19',8000000])
  */
+export declare function executeQuery(
+  query: string,
+  values?: Array<string | number | null | Buffer>
+): Promise<Boolean>;
 
+/**
+ * Fetches all the records from the database based on the given query
+ * and returns the result as an array of the specified type.
+ *
+ * @param {string} query the SQL query to be executed
+ * @param {Array<string | number | null | Buffer>} values optional array of values to be used in the query
+ * @return {Promise<Array<T>>} A promise that resolves to an array of objects of the specified type.
+ */
+export declare function fetchAll<T>(
+  query: string,
+  values?: Array<string | number | null | Buffer>
+): Promise<Array<T>>;
+
+/**
+ * Fetches single records from the database based on the given query
+ * and returns the result as an object of the specified type.
+ *
+ * @param {string} query The SQL query to execute.
+ * @param {Array<string | number | null | Buffer>} values Optional values to bind to the query parameters.
+ * @return {Promise<T>} A promise that resolves to an object of the specified type.
+ */
+export declare function fetchOne<T>(
+  query: string,
+  values?: Array<string | number | null | Buffer>
+): Promise<T>;
+
+/**
+ * Fetches multiple records from the database based on the given query
+ * and returns the result as an array of the specified type.
+ *
+ * @param {string} query The query to execute on the database.
+ * @param {number} size The number of records to fetch.
+ * @param {Array<string | number | null | Buffer>} values Optional values to be used in the query parameters.
+ * @return {Promise<Array<T>>} A promise that resolves to an array of object of the specified type.
+ */
+export declare function fetchMany<T>(
+  query: string,
+  size: number,
+  values?: Array<string | number | null | Buffer>
+): Promise<Array<T>>;
+
+/**
+ * executeMany function executes only one query on multiple values useful for bulk write.
+ *
+ * @param {string} query - SQL query
+ * @param {Array<Array<string | number | null | Buffer>>} values - A param for values used in a SQL query
+ * @return {Promise<Boolean>} boolean
+ *
+ * @example
+ *
+ *     executeMany(query='INSERT INTO sqlite_master (name, email, joining_date, salary) values(?,?,?,?)', values=[['John Doe','example@sqlite-electron.com','1250-12-19',8000000], ['John Doe','example@sqlite-electron.com','1250-12-19',8000000]])
+ */
 export declare function executeMany(
-  Query: string,
-  v: Array<Array<string | number | null | Buffer>>
+  query: string,
+  values: Array<Array<string | number | null | Buffer>>
 ): Promise<boolean>;
 
 /**
  * executeScript function executes all the queries given in the sql script.
  *
- * @param {string} scriptName - A path param for sql script or sql script itself
+ * @param {string} scriptname - A path param for sql script or sql script itself
  * @return {Promise<Boolean>} boolean
  *
  * @example
  *
- *     executeScript(scriptName='C://database//script.sql')
- *     executeScript(scriptName='CREATE TABLE IF NOT EXISTS comp (ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,NAME TEXT NOT NULL,AGE INT NOT NULL,ADDRESS CHAR(50) NOT NULL,SALARY REAL NOT NULL);')
+ *     executeScript(scriptname='C://database//script.sql')
+ *     executeScript(scriptname='CREATE TABLE IF NOT EXISTS comp (ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,NAME TEXT NOT NULL,AGE INT NOT NULL,ADDRESS CHAR(50) NOT NULL,SALARY REAL NOT NULL);')
  */
-
-export declare function executeScript(scriptName: string): Promise<Boolean>;
+export declare function executeScript(scriptname: string): Promise<Boolean>;

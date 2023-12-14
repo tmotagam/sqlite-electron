@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <title>Demo</title>
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
 </head>
+
 <body>
     <h1>sqlite-electron Demo</h1>
     <p>
@@ -16,26 +18,70 @@
     <br>
     <label for="dbpath">Enter the path or name of the database</label>
     <input id="dbpath" type="text">
+    <br>
+    <br>
+    <input type="checkbox" id="isuri" name="URI" value=true>
+    <label for="isuri"> Is path an SQLITE URI</label><br>
+    <br>
     <button onclick="window.api.path()">Enter path of the database</button>
     <br>
     <p id="pout"></p>
     <hr>
     <br>
-    <label for="singlequery">Enter the query eg 'SELECT * FROM sqlite_master'</label>
+    <label for="singlequery">Enter the query eg 'INSERT INTO sqlite_master (name, type, sql) VALUES (?, ?, ?)'</label>
     <input id="singlequery" type="text">
     <br>
     <br>
-    <label for="value">Enter the value in array eg ["name", 23, 2.5]</label>
+    <label for="value">Enter the value in array eg ["name", "query", "SQL"]</label>
     <input id="value" type="text">
-    <br>
-    <br>
-    <label for="fetch">Enter value for fetch eg fetch 5 rows</label>
-    <input id="fetch" type="text">
     <br>
     <br>
     <button onclick="window.api.equery()">Execute a Single query</button>
     <br>
     <p id="pout1"></p>
+    <hr>
+    <br>
+    <label for="fetchallquery">Enter the query eg 'SELECT * FROM sqlite_master'</label>
+    <input id="fetchallquery" type="text">
+    <br>
+    <br>
+    <label for="fetchallvalue">Enter the value in array eg ["name", "query", "SQL"]</label>
+    <input id="fetchallvalue" type="text">
+    <br>
+    <br>
+    <button onclick="window.api.fetchall()">Fetch all the records from the database</button>
+    <br>
+    <p id="poutfa"></p>
+    <hr>
+    <br>
+    <label for="fetchonequery">Enter the query eg 'SELECT * FROM sqlite_master'</label>
+    <input id="fetchonequery" type="text">
+    <br>
+    <br>
+    <label for="fetchonevalue">Enter the value in array eg ["name", "query", "SQL"]</label>
+    <input id="fetchonevalue" type="text">
+    <br>
+    <br>
+    <button onclick="window.api.fetchone()">Fetch only one record from the database</button>
+    <br>
+    <p id="poutfo"></p>
+    <hr>
+    <br>
+    <label for="fetchmanyquery">Enter the query eg 'SELECT * FROM sqlite_master'</label>
+    <input id="fetchmanyquery" type="text">
+    <br>
+    <br>
+    <label for="fetchmanyvalue">Enter the value in array eg ["name", "query", "SQL"]</label>
+    <input id="fetchmanyvalue" type="text">
+    <br>
+    <br>
+    <label for="fetchmanysize">Enter the size eg 2</label>
+    <input id="fetchmanysize" type="int">
+    <br>
+    <br>
+    <button onclick="window.api.fetchmany()">Fetch multiple records from the database</button>
+    <br>
+    <p id="poutfm"></p>
     <hr>
     <br>
     <label for="query">Enter the query</label>
@@ -57,4 +103,5 @@
     <br>
     <p id="pout3"></p>
 </body>
+
 </html>
