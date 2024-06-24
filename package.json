@@ -1,6 +1,6 @@
 {
   "name": "sqlite-electron",
-  "version": "3.0.5",
+  "version": "3.1.1",
   "description": "A module for electron to use sqlite3 without rebuilding",
   "main": "./cjs/sqlite-electron.js",
   "module": "./esm.sqlite-electron.mjs",
@@ -9,6 +9,7 @@
     "postinstall": "node ./scripts/postinstall.js"
   },
   "exports": {
+    "types": "./sqlite-electron.d.ts",
     "import": "./esm/sqlite-electron.mjs",
     "require": "./cjs/sqlite-electron.js"
   },
@@ -28,6 +29,6 @@
     "database"
   ],
   "repository": {
-    "url": "https://github.com/tmotagam/sqlite-electron"
+    "url": "git+https://github.com/tmotagam/sqlite-electron.git"
   }
 }

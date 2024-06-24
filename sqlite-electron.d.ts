@@ -29,7 +29,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *     setdbPath(path=':memory:') // In-memory database
  *     setdbPath(path='file:tutorial.db?mode=ro', isuri=true) // Opening read-only database using SQLite URI
  */
-export declare function setdbPath(path: string, isuri?: boolean): Promise<Boolean>;
+export declare function setdbPath(
+  path: string,
+  isuri?: boolean
+): Promise<Boolean>;
 
 /**
  * executeQuery function executes only one query.
@@ -117,3 +120,15 @@ export declare function executeMany(
  *     executeScript(scriptname='CREATE TABLE IF NOT EXISTS comp (ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,NAME TEXT NOT NULL,AGE INT NOT NULL,ADDRESS CHAR(50) NOT NULL,SALARY REAL NOT NULL);')
  */
 export declare function executeScript(scriptname: string): Promise<Boolean>;
+
+/**
+ * load_extension function loads an extension into the database.
+ *
+ * @param {string} path - Path of the extension
+ * @return {Promise<Boolean>} boolean
+ *
+ * @example
+ *
+ *     load_extension(path='C://database//fts5')
+ */
+export declare function load_extension(path: string): Promise<Boolean>;

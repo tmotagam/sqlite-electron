@@ -4,15 +4,9 @@ Sqlite Electron is a module for electron to use sqlite3 database without rebuild
 
 Changes:
 
-* The setdbPath now supports the [SQLite URI](https://www.sqlite.org/uri.html)
+* Loads SQLite extensions like fts5 into the database using the new load_extension function.
 
-* The executeQuery API has been changed.
-
-* The fetch API has been added for fetching the data from the database.
-
-* The fetch API will now return the data in the object format where the keys will be column and the values will be the data point for that column in the database.
-
-* Also when using typescript you can define the type of the object that will be returned when using the fetch API.
+* Also the setdbPath function will now accept absolute and relative paths of the databases.
 
 ## Installation
 
@@ -61,17 +55,18 @@ executeQuery(
 
 | Api                                               |                                                        Description                                                        |
 | ------------------------------------------------- | :-----------------------------------------------------------------------------------------------------------------------: |
-| setdbPath(path='', isuri=false)                                |                                      It opens or creates the database for operation now supports the InMemory database and also SQLite URI format                                       |
+| setdbPath(path='', isuri=false)                                |                                      It opens or creates the database for operation supports the InMemory databases and also SQLite URI format also the database path can be relative or absolute                                      |
 | executeQuery(query = '', values = []) | It Executes single query with values they must be array |
 | executeMany(query = '', values = [])              |                                       It executes single query with multiple values                                       |
 | executeScript(scriptname = '')                    |                   It execute the sql script scriptName must be name of the script or the script itself                    |
 | fetchAll(query = '', values = [])                    |                   It fetches all the values that matches the query. The values can also be given for the query using values array                    |
 | fetchOne(query = '', values = [])                    |                       It fetches only one value that matches the query. The values can also be given for the query using values array                |
-| fetchMany(query = '', size = 5 values = [])                    |                   It fetches as many values as defined in size parameter that matches the query. The values can also be given for the query using values array                    |
+| fetchMany(query = '', size = 5 values = [])                    |                   It fetches as many values as defined in size parameter that matches the query. The values can also be given for the query using values array                    
+|          load_extension(path = '')         |                   It loads SQLite extension from the given path for the connected database.                   |
 
 ## Usage
 
-The sqlite-electron should only be required in main process while using in electron
+The sqlite-electron should only be used in main process in electron
 
 example:
 
@@ -95,7 +90,7 @@ app.on("window-all-closed", () => {
 
 This is a function for opening a existing database or creating a new database for operation.
 
-Call this function before calling the other 6 functions.
+Call this function before calling the other 7 functions.
 
 ```javascript
 const { app, BrowserWindow, ipcMain } = require("electron");
@@ -139,7 +134,7 @@ ipcMain.handle("createInMemoryDatabase", async () => {
 });
 ```
 
-Now you can also use the SQLite URI format like this.
+You can also use the SQLite URI format like this.
 
 ```javascript
 const { app, BrowserWindow, ipcMain } = require("electron");
@@ -307,7 +302,7 @@ ipcMain.handle("executeMany", async (event, query, values) => {
 
 This is the function for executing multiple queries using sql scripts this function returns only true so never use any SELECT command in the sql scripts.
 
-You have to give absolute path of the script or give the script`s content directly as well.
+You have to give absolute or relative path of the script or give the script`s content directly as well.
 
 eg: script.sql
 
@@ -343,9 +338,37 @@ ipcMain.handle("executeScript", async (event, scriptpath) => {
 });
 ```
 
+### load_extension
+
+This function loads the SQLite extension from the given path for the connected database the path must be absolute.
+
+```javascript
+const { app, BrowserWindow, ipcMain } = require("electron");
+const sqlite = require("sqlite-electron");
+
+function createWindow() {
+  // Your Code
+}
+app.whenReady().then(() => {
+  // Your Code
+});
+
+app.on("window-all-closed", () => {
+  // Your Code
+});
+
+ipcMain.handle("databasePath", async (event, dbPath) => {
+  return await sqlite.setdbPath(dbPath);
+});
+
+ipcMain.handle("load_extension", async (event, path) => {
+  return await sqlite.load_extension(path);
+});
+```
+
 ## Example
 
-[See sqlite-electron in action using electron 28.0.0](https://github.com/tmotagam/sqlite-electron/tree/master/example)
+[See sqlite-electron in action using electron 31.0.1](https://github.com/tmotagam/sqlite-electron/tree/master/example)
 
 ## Contributing
 

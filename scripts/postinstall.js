@@ -24,7 +24,7 @@ const extract = require('./dependencies')
 
 if (process.platform === 'win32') {
     const file = fs.createWriteStream(`./sqlite-${process.platform}-${process.arch}.zip`);
-    https.get(`https://github.com/tmotagam/sqlite-electron/releases/download/v3.0.5/sqlite-${process.platform}-${process.arch}.zip`, (response) => {
+    https.get(`https://github.com/tmotagam/sqlite-electron/releases/download/v3.1.1/sqlite-${process.platform}-${process.arch}.zip`, (response) => {
         if (response.statusCode === 200) {
             response.pipe(file);
             file.on("finish", async () => {
@@ -46,18 +46,18 @@ if (process.platform === 'win32') {
                         fs.unlinkSync(resolve(`./sqlite-${process.platform}-${process.arch}.zip`))
                     });
                 } else {
-                    throw { code: response.statusCode, message: response.statusMessage, url: `https://github.com/tmotagam/sqlite-electron/releases/download/v3.0.5/sqlite-${process.platform}-${process.arch}.zip` }
+                    throw { code: response.statusCode, message: response.statusMessage, url: `https://github.com/tmotagam/sqlite-electron/releases/download/v3.1.1/sqlite-${process.platform}-${process.arch}.zip` }
                 }
             })
         } else {
-            throw { code: response.statusCode, message: response.statusMessage, url: `https://github.com/tmotagam/sqlite-electron/releases/download/v3.0.5/sqlite-${process.platform}-${process.arch}.zip` }
+            throw { code: response.statusCode, message: response.statusMessage, url: `https://github.com/tmotagam/sqlite-electron/releases/download/v3.1.1/sqlite-${process.platform}-${process.arch}.zip` }
         }
     }).on("error", (e) => {
         throw e
     })
 } else {
     const file = fs.createWriteStream(`./sqlite-${process.platform}-${process.arch}.zip`);
-    https.get(`https://github.com/tmotagam/sqlite-electron/releases/download/v3.0.5/sqlite-${process.platform}-${process.arch}.zip`, (response) => {
+    https.get(`https://github.com/tmotagam/sqlite-electron/releases/download/v3.1.1/sqlite-${process.platform}-${process.arch}.zip`, (response) => {
         if (response.statusCode === 200) {
             response.pipe(file);
             file.on("finish", async () => {
@@ -81,11 +81,11 @@ if (process.platform === 'win32') {
                         fs.chmodSync(resolve(`./sqlite-${process.platform}-${process.arch}/sqlite-${process.platform}-${process.arch}`), 0o744)
                     });
                 } else {
-                    throw { code: response.statusCode, message: response.statusMessage, url: `https://github.com/tmotagam/sqlite-electron/releases/download/v3.0.5/sqlite-${process.platform}-${process.arch}.zip` }
+                    throw { code: response.statusCode, message: response.statusMessage, url: `https://github.com/tmotagam/sqlite-electron/releases/download/v3.1.1/sqlite-${process.platform}-${process.arch}.zip` }
                 }
             })
         } else {
-            throw { code: response.statusCode, message: response.statusMessage, url: `https://github.com/tmotagam/sqlite-electron/releases/download/v3.0.5/sqlite-${process.platform}-${process.arch}.zip` }
+            throw { code: response.statusCode, message: response.statusMessage, url: `https://github.com/tmotagam/sqlite-electron/releases/download/v3.1.1/sqlite-${process.platform}-${process.arch}.zip` }
         }
     }).on("error", (e) => {
         throw e
