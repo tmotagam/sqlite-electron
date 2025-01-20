@@ -1,6 +1,6 @@
 {
   "name": "test",
-  "version": "3.0.0",
+  "version": "3.6.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -11,8 +11,8 @@
   "author": "Motagamwala Taha Arif Ali",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^28.0.0",
-    "electron-packager": "^17.1.2"
+    "electron": "^34.0.0",
+    "@electron/packager": "^18.3.6"
   },
   "browser": {
     "fs": false,
@@ -20,6 +20,6 @@
     "os": false
   },
   "dependencies": {
-    "sqlite-electron": "^3.0.5"
+    "sqlite-electron": "^3.2.0"
   }
 }

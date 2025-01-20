@@ -1,35 +1,8 @@
 import { ChildProcess, execFile } from "child_process";
-import { dirname, join } from "path";
+import { join } from "path";
 import { Type } from "typescript";
 
-async () => {
-  try {
-    await import("electron");
-  } catch (error) { }
-};
-
 let sqlite: ChildProcess | null = null;
-
-const electronNodeDetection = (path: string): string => {
-  if (
-    typeof process !== "undefined" &&
-    typeof process.versions === "object" &&
-    !!process.versions.electron &&
-    require.main !== undefined
-  ) {
-    if (process.defaultApp) {
-      return join(dirname(require.main.filename), path);
-    } else {
-      return join(dirname(process.execPath), path);
-    }
-  } else {
-    if (require.main !== undefined) {
-      return join(dirname(require.main.filename), path);
-    } else {
-      throw new Error("Cannot set path");
-    }
-  }
-};
 
 const exitHandler = () => {
   if (sqlite !== null) {
@@ -38,14 +11,6 @@ const exitHandler = () => {
 };
 
 const setdbPath = async (path: string, isuri = false): Promise<boolean> => {
-  let dbPath: string = "";
-  if (path === ":memory:") {
-    dbPath = path;
-  } else if (isuri) {
-    dbPath = path;
-  } else {
-    dbPath = electronNodeDetection(path);
-  }
   if (sqlite === null) {
     let sqlitePath = "";
     if (process.platform === "win32") {
@@ -95,9 +60,7 @@ const setdbPath = async (path: string, isuri = false): Promise<boolean> => {
         }
       };
       sqlite.stdout.on("data", onData);
-      sqlite.stdin.write(
-        `${JSON.stringify(["newConnection", dbPath, isuri])}\n`,
-      );
+      sqlite.stdin.write(`${JSON.stringify(["newConnection", path, isuri])}\n`);
     } catch (error) {
       reject(error);
     }
@@ -130,7 +93,7 @@ const executeQuery = async (
         values[i] = JSON.stringify(values[i]);
       }
       sqlite.stdin.write(
-        `${JSON.stringify(["executeQuery", query, values])}\n`,
+        `${JSON.stringify(["executeQuery", query, values])}\n`
       );
     } catch (error) {
       reject(error);
@@ -138,7 +101,10 @@ const executeQuery = async (
   });
 };
 
-const fetchAll = async (query: string, values: Array<string | number | null | Buffer> = []): Promise<Array<Type>> => {
+const fetchAll = async (
+  query: string,
+  values: Array<string | number | null | Buffer> = []
+): Promise<Array<Type>> => {
   return new Promise((resolve, reject) => {
     try {
       if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
@@ -180,16 +146,17 @@ const fetchAll = async (query: string, values: Array<string | number | null | Bu
         }
         values[i] = JSON.stringify(values[i]);
       }
-      sqlite.stdin.write(
-        `${JSON.stringify(["fetchall", query, values])}\n`,
-      );
+      sqlite.stdin.write(`${JSON.stringify(["fetchall", query, values])}\n`);
     } catch (error) {
       reject(error);
     }
   });
-}
+};
 
-const fetchOne = async (query: string, values: Array<string | number | null | Buffer> = []): Promise<Type> => {
+const fetchOne = async (
+  query: string,
+  values: Array<string | number | null | Buffer> = []
+): Promise<Type> => {
   return new Promise((resolve, reject) => {
     try {
       if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
@@ -228,16 +195,18 @@ const fetchOne = async (query: string, values: Array<string | number | null | Bu
         }
         values[i] = JSON.stringify(values[i]);
       }
-      sqlite.stdin.write(
-        `${JSON.stringify(["fetchone", query, values])}\n`,
-      );
+      sqlite.stdin.write(`${JSON.stringify(["fetchone", query, values])}\n`);
     } catch (error) {
       reject(error);
     }
   });
-}
+};
 
-const fetchMany = async (query: string, size: number, values: Array<string | number | null | Buffer> = []): Promise<Array<Type>> => {
+const fetchMany = async (
+  query: string,
+  size: number,
+  values: Array<string | number | null | Buffer> = []
+): Promise<Array<Type>> => {
   return new Promise((resolve, reject) => {
     try {
       if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
@@ -280,13 +249,13 @@ const fetchMany = async (query: string, size: number, values: Array<string | num
         values[i] = JSON.stringify(values[i]);
       }
       sqlite.stdin.write(
-        `${JSON.stringify(["fetchmany", query, size, values])}\n`,
+        `${JSON.stringify(["fetchmany", query, size, values])}\n`
       );
     } catch (error) {
       reject(error);
     }
   });
-}
+};
 
 const executeMany = async (
   query: string,
@@ -345,4 +314,60 @@ const executeScript = async (scriptname: string): Promise<Boolean> => {
   });
 };
 
-export { setdbPath, executeQuery, fetchOne, fetchMany, fetchAll, executeMany, executeScript };
+const load_extension = async (path: string): Promise<Boolean> => {
+  return new Promise((resolve, reject) => {
+    try {
+      if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
+        return reject("Sqlite not defined");
+      }
+      let string = "";
+      const onData = (data: Buffer) => {
+        string += data.toString();
+        if (string.substring(string.length - 3) === "EOF") {
+          resolve(JSON.parse(string.split("EOF")[0]));
+          sqlite.stdout.off("data", onData);
+        }
+      };
+
+      sqlite.stdout.on("data", onData);
+      sqlite.stdin.write(`${JSON.stringify(["load_extension", path])}\n`);
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+const backup = async (target: string, pages: number = -1, name: string = "main", sleep: number = 0.250): Promise<Boolean> => {
+  return new Promise((resolve, reject) => {
+    try {
+      if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
+        return reject("Sqlite not defined");
+      }
+      let string = "";
+      const onData = (data: Buffer) => {
+        string += data.toString();
+        if (string.substring(string.length - 3) === "EOF") {
+          resolve(JSON.parse(string.split("EOF")[0]));
+          sqlite.stdout.off("data", onData);
+        }
+      };
+
+      sqlite.stdout.on("data", onData);
+      sqlite.stdin.write(`${JSON.stringify(["backup", target, pages, name, sleep])}\n`);
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+export {
+  setdbPath,
+  executeQuery,
+  fetchOne,
+  fetchMany,
+  fetchAll,
+  executeMany,
+  executeScript,
+  load_extension,
+  backup
+};

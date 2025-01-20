@@ -1,6 +1,6 @@
 /*
 Types for sqlite-electron modules
-Copyright (C) 2020-2024  Motagamwala Taha Arif Ali
+Copyright (C) 2020-2025  Motagamwala Taha Arif Ali
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -129,6 +129,21 @@ export declare function executeScript(scriptname: string): Promise<Boolean>;
  *
  * @example
  *
- *     load_extension(path='C://database//fts5')
+ *     load_extension(path='./fts5')
  */
 export declare function load_extension(path: string): Promise<Boolean>;
+
+/**
+ * backup function creates a backup of the database.
+ *
+ * @param {string} target - The database connection to save the backup to.
+ * @param {number} pages - The number of pages to copy at a time. If equal to or less than 0, the entire database is copied in a single step. Defaults to -1.
+ * @param {string} name - The name of the database to back up. Either "main" (the default) for the main database, "temp" for the temporary database, or the name of a custom database as attached using the ATTACH DATABASE SQL statement.
+ * @param {number} sleep - The number of seconds to sleep between successive attempts to back up remaining pages.
+ * @return {Promise<Boolean>} boolean
+ *
+ * @example
+ *
+ *     backup(target='./backup.db', pages=10, name='main', sleep=10)
+ */
+export declare function backup(target: string, pages?: number, name?: string, sleep?: number): Promise<Boolean>;

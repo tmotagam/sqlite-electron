@@ -1,12 +1,10 @@
 # Sqlite Electron
 
-Sqlite Electron is a module for electron to use sqlite3 database without rebuilding it supports Windows (x64, x32) and Linux (x64). It supports ESM and CJS.
+Sqlite Electron is a module for electron to use sqlite3 database without rebuilding it supports Windows (x64, x32) and Linux (x64, arm64). It supports ESM and CJS.
 
 Changes:
 
-* Loads SQLite extensions like fts5 into the database using the new load_extension function.
-
-* Also the setdbPath function will now accept absolute and relative paths of the databases.
+*Backup the database using the new backup function.*
 
 ## Installation
 
@@ -26,11 +24,11 @@ yarn add sqlite-electron
 
 ## Notes
 
-1. The package installs the prebuilt binaries of the sqlite on your system (if your system is supported) if you want any other platform binaries for a specific version go to https://github.com/tmotagam/sqlite-electron/releases.
+*1. The package installs the prebuilt binaries of the sqlite on your system (if your system is supported) if you want any other platform binaries for a specific version go to https://github.com/tmotagam/sqlite-electron/releases.*
 
-2. The example written for this library is not a Boilerplate because of its disregards to the security required for electron so do not use it in your application.
+*2. The examples written for this library disregards the required security for the electron apps so do not use it in your application.*
 
-3. Never give values in the query string use values array for giving the values for the query not taking this precaution will result in sql injection attacks !.
+*3. Never give values in the query string use values array for giving the values for the query not taking this precaution will result in sql injection attacks !.*
 
 Good parctice example
 
@@ -63,6 +61,7 @@ executeQuery(
 | fetchOne(query = '', values = [])                    |                       It fetches only one value that matches the query. The values can also be given for the query using values array                |
 | fetchMany(query = '', size = 5 values = [])                    |                   It fetches as many values as defined in size parameter that matches the query. The values can also be given for the query using values array                    
 |          load_extension(path = '')         |                   It loads SQLite extension from the given path for the connected database.                   |
+| backup(target='', pages=-1, name='main', sleep=0.250)   |  It backs up the database to the target database. The pages can be used if the database is very big. The name is used for the database to backup. Sleep is used to pause the operation for the specified seconds between backup of the specified number of pages.  |
 
 ## Usage
 
@@ -366,9 +365,37 @@ ipcMain.handle("load_extension", async (event, path) => {
 });
 ```
 
+### backup
+
+Backup the database to another database the target database path can be relative or absolute.
+
+```javascript
+const { app, BrowserWindow, ipcMain } = require("electron");
+const sqlite = require("sqlite-electron");
+
+function createWindow() {
+  // Your Code
+}
+app.whenReady().then(() => {
+  // Your Code
+});
+
+app.on("window-all-closed", () => {
+  // Your Code
+});
+
+ipcMain.handle("databasePath", async (event, dbPath) => {
+  return await sqlite.setdbPath(dbPath);
+});
+
+ipcMain.handle("backup", async (event, target, pages, name, sleep) => {
+  return await backup(target, pages, name, sleep);
+});
+```
+
 ## Example
 
-[See sqlite-electron in action using electron 31.0.1](https://github.com/tmotagam/sqlite-electron/tree/master/example)
+**[See sqlite-electron in action using electron 34.0.0](https://github.com/tmotagam/sqlite-electron/tree/master/example)**
 
 ## Contributing
 

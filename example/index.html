@@ -102,6 +102,34 @@
     <button onclick="window.api.escript()">Execute SQL Script</button>
     <br>
     <p id="pout3"></p>
+    <hr>
+    <br>
+    <label for="extensionPath">Enter the extension path</label>
+    <input id="extensionPath" type="text">
+    <button onclick="window.api.load_extension()">Load Extension</button>
+    <br>
+    <p id="pout4"></p>
+    <hr>
+    <br>
+    <label for="backupPath">Enter the backup path</label>
+    <input id="backupPath" type="text">
+    <br>
+    <br>
+    <label for="pages">Enter the pages</label>
+    <input id="pages" value=-1 type="number">
+    <br>
+    <br>
+    <label for="name">Enter the name of the backup db</label>
+    <input id="name" value="main" type="text">
+    <br>
+    <br>
+    <label for="sleep">Enter the sleep time</label>
+    <input id="sleep" value=0.250 type="number">
+    <br>
+    <br>
+    <button onclick="window.api.backup()">Backup</button>
+    <br>
+    <p id="pout5"></p>
 </body>
 
 </html>

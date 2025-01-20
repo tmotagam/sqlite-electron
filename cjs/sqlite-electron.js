@@ -9,8 +9,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
@@ -45,7 +45,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.load_extension = exports.executeScript = exports.executeMany = exports.fetchAll = exports.fetchMany = exports.fetchOne = exports.executeQuery = exports.setdbPath = void 0;
+exports.backup = exports.load_extension = exports.executeScript = exports.executeMany = exports.fetchAll = exports.fetchMany = exports.fetchOne = exports.executeQuery = exports.setdbPath = void 0;
 var child_process_1 = require("child_process");
 var path_1 = require("path");
 var sqlite = null;
@@ -401,3 +401,37 @@ var load_extension = function (path) { return __awaiter(void 0, void 0, void 0, 
     });
 }); };
 exports.load_extension = load_extension;
+var backup = function (target_1) {
+    var args_1 = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        args_1[_i - 1] = arguments[_i];
+    }
+    return __awaiter(void 0, __spreadArray([target_1], args_1, true), void 0, function (target, pages, name, sleep) {
+        if (pages === void 0) { pages = -1; }
+        if (name === void 0) { name = "main"; }
+        if (sleep === void 0) { sleep = 0.250; }
+        return __generator(this, function (_a) {
+            return [2, new Promise(function (resolve, reject) {
+                    try {
+                        if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
+                            return reject("Sqlite not defined");
+                        }
+                        var string_9 = "";
+                        var onData_9 = function (data) {
+                            string_9 += data.toString();
+                            if (string_9.substring(string_9.length - 3) === "EOF") {
+                                resolve(JSON.parse(string_9.split("EOF")[0]));
+                                sqlite.stdout.off("data", onData_9);
+                            }
+                        };
+                        sqlite.stdout.on("data", onData_9);
+                        sqlite.stdin.write("".concat(JSON.stringify(["backup", target, pages, name, sleep]), "\n"));
+                    }
+                    catch (error) {
+                        reject(error);
+                    }
+                })];
+        });
+    });
+};
+exports.backup = backup;

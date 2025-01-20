@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const { join } = require("path");
-const { setdbPath, executeQuery, executeMany, executeScript, fetchOne, fetchMany, fetchAll } = require("sqlite-electron");
+const { setdbPath, executeQuery, executeMany, executeScript, fetchOne, fetchMany, fetchAll, load_extension, backup } = require("sqlite-electron");
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -81,6 +81,22 @@ ipcMain.handle("executeMany", async (event, query, values) => {
 ipcMain.handle("executeScript", async (event, scriptpath) => {
   try {
     return await executeScript(scriptpath);
+  } catch (error) {
+    return error;
+  }
+});
+
+ipcMain.handle("load_extension", async (event, path) => {
+  try {
+    return await load_extension(path);
+  } catch (error) {
+    return error;
+  }
+});
+
+ipcMain.handle("backup", async (event, target, pages, name, sleep) => {
+  try {
+    return await backup(target, Number(pages), name, Number(sleep));
   } catch (error) {
     return error;
   }

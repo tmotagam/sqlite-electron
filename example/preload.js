@@ -82,5 +82,20 @@ contextBridge.exposeInMainWorld('api', {
     const spath = document.getElementById('scriptPath').value
     const res = await ipcRenderer.invoke('executeScript', spath);
     document.getElementById('pout3').innerText = 'Output: ' + res;
+  },
+  load_extension: async () => {
+    const path = document.getElementById('extensionPath').value
+    const res = await ipcRenderer.invoke('load_extension', path);
+    console.log(res);
+    document.getElementById('pout4').innerText = 'Output: ' + res;
+  },
+  backup: async () => {
+    const target = document.getElementById('backupPath').value
+    const pages = document.getElementById('pages').value
+    const name = document.getElementById('name').value
+    const sleep = document.getElementById('sleep').value
+    const res = await ipcRenderer.invoke('backup', target, pages, name, sleep);
+    console.log(res);
+    document.getElementById('pout5').innerText = 'Output: ' + res;
   }
 })
