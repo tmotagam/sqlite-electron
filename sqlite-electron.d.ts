@@ -147,3 +147,16 @@ export declare function load_extension(path: string): Promise<Boolean>;
  *     backup(target='./backup.db', pages=10, name='main', sleep=10)
  */
 export declare function backup(target: string, pages?: number, name?: string, sleep?: number): Promise<Boolean>;
+
+/**
+ * iterdump function generates an iterable of SQL commands that can recreate the entire database schema and data.
+ *
+ * @param {string} file - The name of the file to dump the data to in sql format.
+ * @param {string} filter - The filter to use when dumping the data.
+ * @return {Promise<Boolean>} boolean
+ *
+ * @example
+ *
+ *     iterdump(file='./dump.sql')
+*/
+export declare function iterdump(file: string, filter?: string): Promise<Boolean>;

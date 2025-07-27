@@ -10,7 +10,7 @@
 <body>
     <h1>sqlite-electron Demo</h1>
     <p>
-        We are using Node.js <span id="node-version"></span>,
+        You are using Node.js <span id="node-version"></span>,
         Chromium <span id="chrome-version"></span>,
         and Electron <span id="electron-version"></span>.
     </p>
@@ -130,6 +130,19 @@
     <button onclick="window.api.backup()">Backup</button>
     <br>
     <p id="pout5"></p>
+    <hr>
+    <br>
+    <label for="iterdumpPath">Enter the path</label>
+    <input id="iterdumpPath" type="text">
+    <br>
+    <br>
+    <label for="iterdumpFilter">Enter the filter</label>
+    <input id="iterdumpFilter" type="text">
+    <br>
+    <br>
+    <button onclick="window.api.iterdump()">Iterdump</button>
+    <br>
+    <p id="pout6"></p>
 </body>
 
 </html>

@@ -45,7 +45,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.backup = exports.load_extension = exports.executeScript = exports.executeMany = exports.fetchAll = exports.fetchMany = exports.fetchOne = exports.executeQuery = exports.setdbPath = void 0;
+exports.iterdump = exports.backup = exports.load_extension = exports.executeScript = exports.executeMany = exports.fetchAll = exports.fetchMany = exports.fetchOne = exports.executeQuery = exports.setdbPath = void 0;
 var child_process_1 = require("child_process");
 var path_1 = require("path");
 var sqlite = null;
@@ -59,9 +59,10 @@ var setdbPath = function (path_2) {
     for (var _i = 1; _i < arguments.length; _i++) {
         args_1[_i - 1] = arguments[_i];
     }
-    return __awaiter(void 0, __spreadArray([path_2], args_1, true), void 0, function (path, isuri) {
+    return __awaiter(void 0, __spreadArray([path_2], args_1, true), void 0, function (path, isuri, autocommit) {
         var sqlitePath;
         if (isuri === void 0) { isuri = false; }
+        if (autocommit === void 0) { autocommit = true; }
         return __generator(this, function (_a) {
             if (sqlite === null) {
                 sqlitePath = "";
@@ -96,7 +97,7 @@ var setdbPath = function (path_2) {
                             }
                         };
                         sqlite.stdout.on("data", onData_1);
-                        sqlite.stdin.write("".concat(JSON.stringify(["newConnection", path, isuri]), "\n"));
+                        sqlite.stdin.write("".concat(JSON.stringify(["newConnection", path, isuri, autocommit]), "\n"));
                     }
                     catch (error) {
                         reject(error);
@@ -435,3 +436,35 @@ var backup = function (target_1) {
     });
 };
 exports.backup = backup;
+var iterdump = function (file_1) {
+    var args_1 = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        args_1[_i - 1] = arguments[_i];
+    }
+    return __awaiter(void 0, __spreadArray([file_1], args_1, true), void 0, function (file, filter) {
+        if (filter === void 0) { filter = null; }
+        return __generator(this, function (_a) {
+            return [2, new Promise(function (resolve, reject) {
+                    try {
+                        if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
+                            return reject("Sqlite not defined");
+                        }
+                        var string_10 = "";
+                        var onData_10 = function (data) {
+                            string_10 += data.toString();
+                            if (string_10.substring(string_10.length - 3) === "EOF") {
+                                resolve(JSON.parse(string_10.split("EOF")[0]));
+                                sqlite.stdout.off("data", onData_10);
+                            }
+                        };
+                        sqlite.stdout.on("data", onData_10);
+                        sqlite.stdin.write("".concat(JSON.stringify(["iterdump", file, filter]), "\n"));
+                    }
+                    catch (error) {
+                        reject(error);
+                    }
+                })];
+        });
+    });
+};
+exports.iterdump = iterdump;

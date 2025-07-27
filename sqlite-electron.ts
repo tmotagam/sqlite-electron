@@ -10,7 +10,7 @@ const exitHandler = () => {
   }
 };
 
-const setdbPath = async (path: string, isuri = false): Promise<boolean> => {
+const setdbPath = async (path: string, isuri = false, autocommit = true): Promise<boolean> => {
   if (sqlite === null) {
     let sqlitePath = "";
     if (process.platform === "win32") {
@@ -60,7 +60,7 @@ const setdbPath = async (path: string, isuri = false): Promise<boolean> => {
         }
       };
       sqlite.stdout.on("data", onData);
-      sqlite.stdin.write(`${JSON.stringify(["newConnection", path, isuri])}\n`);
+      sqlite.stdin.write(`${JSON.stringify(["newConnection", path, isuri, autocommit])}\n`);
     } catch (error) {
       reject(error);
     }
@@ -360,6 +360,29 @@ const backup = async (target: string, pages: number = -1, name: string = "main",
   });
 }
 
+const iterdump = async (file: string, filter: string = null): Promise<Boolean> => {
+  return new Promise((resolve, reject) => {
+    try {
+      if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
+        return reject("Sqlite not defined");
+      }
+      let string = "";
+      const onData = (data: Buffer) => {
+        string += data.toString();
+        if (string.substring(string.length - 3) === "EOF") {
+          resolve(JSON.parse(string.split("EOF")[0]));
+          sqlite.stdout.off("data", onData);
+        }
+      };
+
+      sqlite.stdout.on("data", onData);
+      sqlite.stdin.write(`${JSON.stringify(["iterdump", file, filter])}\n`);
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
 export {
   setdbPath,
   executeQuery,
@@ -369,5 +392,6 @@ export {
   executeMany,
   executeScript,
   load_extension,
-  backup
+  backup,
+  iterdump,
 };

@@ -4,7 +4,7 @@ Sqlite Electron is a module for electron to use sqlite3 database without rebuild
 
 Changes:
 
-*Backup the database using the new backup function.*
+*iterdump function to generate an iterable of SQL commands that can recreate the entire database schema and data*
 
 ## Installation
 
@@ -24,11 +24,13 @@ yarn add sqlite-electron
 
 ## Notes
 
-*1. The package installs the prebuilt binaries of the sqlite on your system (if your system is supported) if you want any other platform binaries for a specific version go to https://github.com/tmotagam/sqlite-electron/releases.*
+*1. Due to package building issues the sqlite3 prebuilt for x32 windows system is currently unavailable for version 3.3.3 it will be available as soon as issues are resolved.*
 
-*2. The examples written for this library disregards the required security for the electron apps so do not use it in your application.*
+*2. The package installs the prebuilt binaries of the sqlite on your system (if your system is supported) if you want any other platform binaries for a specific version go to https://github.com/tmotagam/sqlite-electron/releases.*
 
-*3. Never give values in the query string use values array for giving the values for the query not taking this precaution will result in sql injection attacks !.*
+*3. The example written for this library disregards the required security for the electron apps so do not use it as starting point in your applications.*
+
+*4. Never give values in the query string use values array for giving the values for the query not taking this precaution will result in SQL injection attacks !.*
 
 Good parctice example
 
@@ -56,12 +58,13 @@ executeQuery(
 | setdbPath(path='', isuri=false)                                |                                      It opens or creates the database for operation supports the InMemory databases and also SQLite URI format also the database path can be relative or absolute                                      |
 | executeQuery(query = '', values = []) | It Executes single query with values they must be array |
 | executeMany(query = '', values = [])              |                                       It executes single query with multiple values                                       |
-| executeScript(scriptname = '')                    |                   It execute the sql script scriptName must be name of the script or the script itself                    |
+| executeScript(scriptname = '')                    |                   It execute the SQL script scriptName must be name of the script or the script itself                    |
 | fetchAll(query = '', values = [])                    |                   It fetches all the values that matches the query. The values can also be given for the query using values array                    |
 | fetchOne(query = '', values = [])                    |                       It fetches only one value that matches the query. The values can also be given for the query using values array                |
 | fetchMany(query = '', size = 5 values = [])                    |                   It fetches as many values as defined in size parameter that matches the query. The values can also be given for the query using values array                    
 |          load_extension(path = '')         |                   It loads SQLite extension from the given path for the connected database.                   |
 | backup(target='', pages=-1, name='main', sleep=0.250)   |  It backs up the database to the target database. The pages can be used if the database is very big. The name is used for the database to backup. Sleep is used to pause the operation for the specified seconds between backup of the specified number of pages.  |
+| iterdump(file='', filter=null) |  It generates an iterable of SQL commands that can recreate the entire database schema and data. The file parameter is used to save all the generated SQL commands. The filter is used to filter the databases to be generated as SQL commands the default is null which means the entire database is to be generated.  |
 
 ## Usage
 
@@ -299,13 +302,13 @@ ipcMain.handle("executeMany", async (event, query, values) => {
 
 ### executeScript
 
-This is the function for executing multiple queries using sql scripts this function returns only true so never use any SELECT command in the sql scripts.
+This is the function for executing multiple queries using SQL scripts this function returns only true so never use any SELECT command in the SQL scripts.
 
 You have to give absolute or relative path of the script or give the script`s content directly as well.
 
-eg: script.sql
+eg: script.SQL
 
-```sql
+```SQL
 CREATE TABLE IF NOT EXISTS sqlite_main (ID INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,NAME TEXT NOT NULL,AGE INT NOT NULL,ADDRESS CHAR(50) NOT NULL,SALARY REAL NOT NULL);
 ```
 
@@ -393,16 +396,44 @@ ipcMain.handle("backup", async (event, target, pages, name, sleep) => {
 });
 ```
 
+### iterdump
+
+Generates the database schema and its data as an SQL commands the file path can be relative or absolute.
+
+```javascript
+const { app, BrowserWindow, ipcMain } = require("electron");
+const sqlite = require("sqlite-electron");
+
+function createWindow() {
+  // Your Code
+}
+app.whenReady().then(() => {
+  // Your Code
+});
+
+app.on("window-all-closed", () => {
+  // Your Code
+});
+
+ipcMain.handle("databasePath", async (event, dbPath) => {
+  return await sqlite.setdbPath(dbPath);
+});
+
+ipcMain.handle("iterdump", async (event, file, filter) => {
+  return await iterdump(file, filter);
+});
+```
+
 ## Example
 
-**[See sqlite-electron in action using electron 34.0.0](https://github.com/tmotagam/sqlite-electron/tree/master/example)**
+**[See sqlite-electron in action using electron 37.2.3](https://github.com/tmotagam/sqlite-electron/tree/master/example)**
 
 ## Contributing
 
-Pull requests and issues are welcome. For major changes, please open an issue first to discuss what you would like to change.
+**Pull requests and issues are welcome. For major changes, please open an issue first to discuss what you would like to change.**
 
-[Github](https://github.com/tmotagam/sqlite-electron)
+**[Github](https://github.com/tmotagam/sqlite-electron)**
 
 ## License
 
-[GPL v3.0](https://choosealicense.com/licenses/gpl-3.0/)
+**[GPL v3.0](https://choosealicense.com/licenses/gpl-3.0/)**

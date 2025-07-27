@@ -97,5 +97,12 @@ contextBridge.exposeInMainWorld('api', {
     const res = await ipcRenderer.invoke('backup', target, pages, name, sleep);
     console.log(res);
     document.getElementById('pout5').innerText = 'Output: ' + res;
+  },
+  iterdump: async () => {
+    const path = document.getElementById('iterdumpPath').value
+    const filter = document.getElementById('iterdumpFilter').value
+    const res = await ipcRenderer.invoke('iterdump', path, filter);
+    console.log(res);
+    document.getElementById('pout6').innerText = 'Output: ' + res;
   }
 })
