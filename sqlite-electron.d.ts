@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * @param {string} path - Relative path of a database since it constructs absolute path by itself
  * @param {boolean} isuri - true if path is a URL
+ * @param {boolean} autocommit - true if you want to automatically commit after each query
  * @return {Promise<Boolean>} boolean
  *
  * @example
@@ -28,10 +29,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *     setdbPath(path='./path/to/db/path.db')
  *     setdbPath(path=':memory:') // In-memory database
  *     setdbPath(path='file:tutorial.db?mode=ro', isuri=true) // Opening read-only database using SQLite URI
+ *     setdbPath(path='./path/to/db/path.db', isuri=false, autocommit=false) // Opening a database with autocommit
  */
 export declare function setdbPath(
   path: string,
-  isuri?: boolean
+  isuri?: boolean,
+  autocommit?: boolean,
 ): Promise<Boolean>;
 
 /**

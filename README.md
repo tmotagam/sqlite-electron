@@ -6,6 +6,8 @@ Changes:
 
 *iterdump function to generate an iterable of SQL commands that can recreate the entire database schema and data*
 
+*Added autocommit option in setdbPath to make the commit and rollback either auto or manual*
+
 ## Installation
 
 Use the package manager [npm](https://www.npmjs.com/package/sqlite-electron) to install Sqlite Electron.
@@ -24,7 +26,7 @@ yarn add sqlite-electron
 
 ## Notes
 
-*1. Due to package building issues the sqlite3 prebuilt for x32 windows system is currently unavailable for version 3.3.3 it will be available as soon as issues are resolved.*
+*1. Due to package building issues the sqlite3 prebuilt for x32 windows system is currently unavailable for version 3.3.5 it will be available as soon as issues are resolved.*
 
 *2. The package installs the prebuilt binaries of the sqlite on your system (if your system is supported) if you want any other platform binaries for a specific version go to https://github.com/tmotagam/sqlite-electron/releases.*
 
@@ -55,7 +57,7 @@ executeQuery(
 
 | Api                                               |                                                        Description                                                        |
 | ------------------------------------------------- | :-----------------------------------------------------------------------------------------------------------------------: |
-| setdbPath(path='', isuri=false)                                |                                      It opens or creates the database for operation supports the InMemory databases and also SQLite URI format also the database path can be relative or absolute                                      |
+| setdbPath(path='', isuri=false, autocommit=true)                                |                                      It opens or creates the database for operation supports the InMemory databases and also SQLite URI format also the database path can be relative or absolute. Added autocommit to make the sql transaction either commit or rollback automatically or manually                |
 | executeQuery(query = '', values = []) | It Executes single query with values they must be array |
 | executeMany(query = '', values = [])              |                                       It executes single query with multiple values                                       |
 | executeScript(scriptname = '')                    |                   It execute the SQL script scriptName must be name of the script or the script itself                    |
@@ -136,7 +138,7 @@ ipcMain.handle("createInMemoryDatabase", async () => {
 });
 ```
 
-You can also use the SQLite URI format like this.
+You can use the SQLite URI format like this.
 
 ```javascript
 const { app, BrowserWindow, ipcMain } = require("electron");
@@ -155,6 +157,27 @@ app.on("window-all-closed", () => {
 
 ipcMain.handle("createDatabaseusingURI", async () => {
   return await sqlite.setdbPath("file:tutorial.db?mode:rw", isuri=true);
+});
+```
+You can use autocommit like this.
+
+```javascript
+const { app, BrowserWindow, ipcMain } = require("electron");
+const sqlite = require("sqlite-electron");
+
+function createWindow() {
+  // Your Code
+}
+app.whenReady().then(() => {
+  // Your Code
+});
+
+app.on("window-all-closed", () => {
+  // Your Code
+});
+
+ipcMain.handle("Databasewithautocommit", async (event, dbPath, isuri, autocommit) => {
+  return await sqlite.setdbPath(dbPath, isuri, autocommit);
 });
 ```
 
