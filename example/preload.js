@@ -15,8 +15,9 @@ contextBridge.exposeInMainWorld('api', {
   path: async () => {
     const path = document.getElementById('dbpath').value
     const isuri = document.getElementById('isuri').checked
+    const autocommit = document.getElementById('autocommit').checked
     try {
-      const res = await ipcRenderer.invoke('potd', path, isuri);
+      const res = await ipcRenderer.invoke('potd', path, isuri, autocommit);
       document.getElementById('pout').innerText = 'Output: ' + res;
     } catch (error) {
       document.getElementById('pout').innerText = 'Output: ' + error;

@@ -30,9 +30,9 @@ app.on("window-all-closed", () => {
   }
 });
 
-ipcMain.handle("potd", async (event, dbPath, isuri) => {
+ipcMain.handle("potd", async (event, dbPath, isuri, autocommit) => {
   try {
-    return await setdbPath(dbPath, isuri)
+    return await setdbPath(dbPath, isuri, autocommit)
   } catch (error) {
     return error
   }

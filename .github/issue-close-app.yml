@@ -1,0 +1,28 @@
+comment: "This issue is closed because it does not meet our issue template."
+issueConfigs:
+  # There can be several configs for different kind of issues.
+  - content:
+      # 1: bug report (1 variation)
+      - "Describe the bug"
+      - "To Reproduce"
+      - "Expected behavior"
+      - "Desktop (please complete the following information):"
+  - content:
+      # 1: bug report (2 variation)
+      - "Describe the bug"
+      - "Screenshots"
+      - "Expected behavior"
+      - "Desktop (please complete the following information):"
+  - content:
+      # 2: feature request
+      - "Is your feature request related to a problem? Please describe."
+      - "Describe the solution you'd like"
+      - "Describe alternatives you've considered"
+  - content:
+      # 3: question
+      - "Question"
+
+caseInsensitive: false
+label: "Incomplete Issue"
+# The issue is judged to be legal if it includes all keywords from any of these configs.
+# Or it will be closed by the app.

@@ -20,8 +20,13 @@
     <input id="dbpath" type="text">
     <br>
     <br>
+    <input type="checkbox" id="autocommit" name="AUTOCOMMIT" value=true>
+    <label for="autocommit"> want AUTOCOMMIT enabled</label>
+    <br>
+    <br>
     <input type="checkbox" id="isuri" name="URI" value=true>
-    <label for="isuri"> Is path an SQLITE URI</label><br>
+    <label for="isuri"> Is path an SQLITE URI</label>
+    <br>
     <br>
     <button onclick="window.api.path()">Enter path of the database</button>
     <br>
