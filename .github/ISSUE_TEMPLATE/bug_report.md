@@ -2,7 +2,7 @@
 name: Bug report
 about: Create a report to help us improve
 title: "[REPORT]"
-labels: ""
+labels: "bug"
 assignees: tmotagam
 ---
 
@@ -18,7 +18,7 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 Add screenshots to help explain your problem.
 
-**Desktop (please complete the following information):**
+**Desktop (please complete the following information and give more info if possible):**
 
 - OS: [e.g. iOS]
 - Version [e.g. 22]

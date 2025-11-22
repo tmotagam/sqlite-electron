@@ -2,7 +2,7 @@
 name: Question
 about: Ask questions about sqlite-electron
 title: "[QUESTION]"
-labels: ""
+labels: "question"
 assignees: tmotagam
 ---
 
