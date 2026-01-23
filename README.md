@@ -1,12 +1,14 @@
 # Sqlite Electron
 
-Sqlite Electron is a module for electron to use sqlite3 database without rebuilding it supports Windows (x64, x32) and Linux (x64, arm64). It supports ESM and CJS.
+Sqlite Electron is a module for electron to use sqlite3 database without rebuilding it supports Windows (x64, x32, arm64), Linux (x64, arm64), and MacOS (x64, arm64). ESM and CJS modules are supported.
 
 Changes:
 
-*iterdump function to generate an iterable of SQL commands that can recreate the entire database schema and data*
+*MacOS is now Supported :tada:*
 
-*Added autocommit option in setdbPath to make the commit and rollback either auto or manual*
+*Can use objects as well as arrays when binding the values with the sql statement using named parameters*
+
+*Use env var **SQEL_PLATFORM_ARCH_IDENTIFIER** to download any platform binaries on any other platform eg. create electron app for macOS on the windows the sqlite-electron will install the macOS related binary when used the env var. For valid options see below*
 
 ## Installation
 
@@ -24,15 +26,23 @@ Use the package manager [yarn](https://yarnpkg.com/package/sqlite-electron) to i
 yarn add sqlite-electron
 ```
 
+**SQEL_PLATFORM_ARCH_IDENTIFIER**
+
+The valid options for this env variable are as follows
+
+*1. win32-x64, win32-ia32, win32-arm64*
+
+*2. linux-x64, linux-arm64*
+
+*3. darwin-x64, darwin-arm64*
+
 ## Notes
 
-*1. Due to package building issues the sqlite3 prebuilt for x32 windows system is currently unavailable for version 3.3.5 it will be available as soon as issues are resolved.*
+*1. The package installs the prebuilt binaries of the sqlite on your system (if your system is supported)*
 
-*2. The package installs the prebuilt binaries of the sqlite on your system (if your system is supported) if you want any other platform binaries for a specific version go to https://github.com/tmotagam/sqlite-electron/releases.*
+*2. The example written for this library disregards the required security for the electron apps so do not use it as starting point in your applications.*
 
-*3. The example written for this library disregards the required security for the electron apps so do not use it as starting point in your applications.*
-
-*4. Never give values in the query string use values array for giving the values for the query not taking this precaution will result in SQL injection attacks !.*
+*3. Never give values in the query string use values array for giving the values for the query not taking this precaution will result in SQL injection attacks !.*
 
 Good parctice example
 
@@ -58,12 +68,12 @@ executeQuery(
 | Api                                               |                                                        Description                                                        |
 | ------------------------------------------------- | :-----------------------------------------------------------------------------------------------------------------------: |
 | setdbPath(path='', isuri=false, autocommit=true)                                |                                      It opens or creates the database for operation supports the InMemory databases and also SQLite URI format also the database path can be relative or absolute. Added autocommit to make the sql transaction either commit or rollback automatically or manually                |
-| executeQuery(query = '', values = []) | It Executes single query with values they must be array |
+| executeQuery(query = '', values = []) | It Executes single query with values they can be array or object |
 | executeMany(query = '', values = [])              |                                       It executes single query with multiple values                                       |
 | executeScript(scriptname = '')                    |                   It execute the SQL script scriptName must be name of the script or the script itself                    |
-| fetchAll(query = '', values = [])                    |                   It fetches all the values that matches the query. The values can also be given for the query using values array                    |
-| fetchOne(query = '', values = [])                    |                       It fetches only one value that matches the query. The values can also be given for the query using values array                |
-| fetchMany(query = '', size = 5 values = [])                    |                   It fetches as many values as defined in size parameter that matches the query. The values can also be given for the query using values array                    
+| fetchAll(query = '', values = [])                    |                   It fetches all the values that matches the query. The values can also be given for the query using values array or object                    |
+| fetchOne(query = '', values = [])                    |                       It fetches only one value that matches the query. The values can also be given for the query using values array or object                |
+| fetchMany(query = '', size = 5 values = [])                    |                   It fetches as many values as defined in size parameter that matches the query. The values can also be given for the query using values arrays or array of object                    
 |          load_extension(path = '')         |                   It loads SQLite extension from the given path for the connected database.                   |
 | backup(target='', pages=-1, name='main', sleep=0.250)   |  It backs up the database to the target database. The pages can be used if the database is very big. The name is used for the database to backup. Sleep is used to pause the operation for the specified seconds between backup of the specified number of pages.  |
 | iterdump(file='', filter=null) |  It generates an iterable of SQL commands that can recreate the entire database schema and data. The file parameter is used to save all the generated SQL commands. The filter is used to filter the databases to be generated as SQL commands the default is null which means the entire database is to be generated.  |
@@ -176,14 +186,14 @@ app.on("window-all-closed", () => {
   // Your Code
 });
 
-ipcMain.handle("Databasewithautocommit", async (event, dbPath, isuri, autocommit) => {
-  return await sqlite.setdbPath(dbPath, isuri, autocommit);
+ipcMain.handle("Databasewithautocommit", async (event, dbPath, isuri) => {
+  return await sqlite.setdbPath(dbPath, isuri, false);
 });
 ```
 
 ### executeQuery
 
-This is the function for executing any single query eg: 'INSERT INTO tutorial (x) VALUES (?)' you can give values through the values array.
+This is the function for executing any single query eg: 'INSERT INTO tutorial (x) VALUES (?)' you can give values using array or object.
 
 ```javascript
 const { app, BrowserWindow, ipcMain } = require("electron");
@@ -204,14 +214,18 @@ ipcMain.handle("databasePath", async (event, dbPath) => {
   return await sqlite.setdbPath(dbPath);
 });
 
-ipcMain.handle("executeQuery", async (event, query, values) => {
-  return await sqlite.executeQuery(query, values);
+ipcMain.handle("executeQueryArray", async (event, query, values) => {
+  return await sqlite.executeQuery(query, []);
+});
+
+ipcMain.handle("executeQueryObject", async (event, query, values) => {
+  return await sqlite.executeQuery(query, {});
 });
 ```
 
 ### fetchAll
 
-This is the function for fetching all the rows that can be retrived using the given query eg: 'SELECT \* from tutorial' you can give values through the values array they will return the data in the Object format like this [{name: 'b', ...}, {name: 'a', ...}, {name: 'c', ...}].
+This is the function for fetching all the rows that can be retrived using the given query eg: 'SELECT \* from tutorial' you can give values array or object it will return the data in the Object format like this [{name: 'b', ...}, {name: 'a', ...}, {name: 'c', ...}].
 
 ```javascript
 const { app, BrowserWindow, ipcMain } = require("electron");
@@ -239,7 +253,7 @@ ipcMain.handle("fetchAll", async (event, query, values) => {
 
 ### fetchOne
 
-This is the function for fetching only one row that can be retrived using the given query eg: 'SELECT \* from tutorial WHERE ID=?' you can give values through the values array they will return the data in the Object format like this {name: 'a', ...}.
+This is the function for fetching only one row that can be retrived using the given query eg: 'SELECT \* from tutorial WHERE ID=?' you can give values array or object it will return the data in the Object format like this {name: 'a', ...}.
 
 ```javascript
 const { app, BrowserWindow, ipcMain } = require("electron");
@@ -267,7 +281,7 @@ ipcMain.handle("fetchOne", async (event, query, values) => {
 
 ### fetchMany
 
-This is the function for fetching as many rows as the size parameter allows that can be retrived using the given query eg: 'SELECT \* from tutorial WHERE name=?' you can give values through the values array they will return the data in the Object format like this [{name: 'a', ...}, {name: 'a', ...}, {name: 'a', ...}].
+This is the function for fetching as many rows as the size parameter allows that can be retrived using the given query eg: 'SELECT \* from tutorial WHERE name=?' you can give values through the values arrays or array of object it will return the data in the Object format like this [{name: 'a', ...}, {name: 'a', ...}, {name: 'a', ...}].
 
 ```javascript
 const { app, BrowserWindow, ipcMain } = require("electron");
@@ -297,7 +311,9 @@ ipcMain.handle("fetchMany", async (event, query, size, values) => {
 
 This is the function for executing query with multiple values.
 
-eg: ("INSERT INTO sqlite_main (NAME,AGE,ADDRESS,SALARY) VALUES (?, ?, ?, ?)", [["Pa", 32, "California", 20000.00], ["Pau", 32, "California", 20000.00], ["P", 32, "California", 20000.00], ["l", 32, "California", 20000.00]]) .
+eg: ("INSERT INTO sqlite_main (NAME,AGE,ADDRESS,SALARY) VALUES (?, ?, ?, ?)", [ ["Pa", 32, "California", 20000.00], ["Pau", 32, "California", 20000.00], ["P", 32, "California", 20000.00], ["l", 32, "California", 20000.00] ]) .
+
+eg: (query='INSERT INTO sqlite_master (name, email, joining_date, salary) values(:name, :email, :joining_date, :salary)', values=[{'name':'John Doe','email':'example@sqlite-electron.com','joining_date':'1250-12-19','salary':8000000}]) .
 
 ```javascript
 const { app, BrowserWindow, ipcMain } = require("electron");
@@ -449,7 +465,7 @@ ipcMain.handle("iterdump", async (event, file, filter) => {
 
 ## Example
 
-**[See sqlite-electron in action using electron 37.2.3](https://github.com/tmotagam/sqlite-electron/tree/master/example)**
+**[See sqlite-electron in action using electron 40.0.0](https://github.com/tmotagam/sqlite-electron/tree/master/example)**
 
 ## Contributing
 

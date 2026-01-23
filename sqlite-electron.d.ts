@@ -1,6 +1,6 @@
 /*
 Types for sqlite-electron modules
-Copyright (C) 2020-2025  Motagamwala Taha Arif Ali
+Copyright (C) 2020-2026  Motagamwala Taha Arif Ali
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * @param {string} path - Relative path of a database since it constructs absolute path by itself
  * @param {boolean} isuri - true if path is a URL
- * @param {boolean} autocommit - true if you want to automatically commit after each query
+ * @param {boolean} autocommit - allow you to turn off/on autocommit
  * @return {Promise<Boolean>} boolean
  *
  * @example
@@ -29,42 +29,46 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *     setdbPath(path='./path/to/db/path.db')
  *     setdbPath(path=':memory:') // In-memory database
  *     setdbPath(path='file:tutorial.db?mode=ro', isuri=true) // Opening read-only database using SQLite URI
- *     setdbPath(path='./path/to/db/path.db', isuri=false, autocommit=false) // Opening a database with autocommit
+ *     setdbPath(path='./path/to/db/path.db', autocommit=false) // Opening database with autocommit off
  */
 export declare function setdbPath(
   path: string,
   isuri?: boolean,
-  autocommit?: boolean,
+  autocommit?: boolean
 ): Promise<Boolean>;
 
 /**
  * executeQuery function executes only one query.
  *
  * @param {string} query - SQL query
- * @param {Array<string | number | null | Buffer>} values - An optional param for values used in a SQL query
+ * @param {Array<string | number | null | Buffer> | Record<string, string | number | null | Buffer>} values - Optional values to bind to the query parameters can be array or object.
  * @return {Promise<Boolean>} boolean
  *
  * @example
  *
  *     executeQuery(query='CREATE TABLE sqlite_master (name, email, joining_date, salary)')
  *     executeQuery(query='INSERT INTO sqlite_master (name, email, joining_date, salary) values(?,?,?,?)', values=['John Doe','example@sqlite-electron.com','1250-12-19',8000000])
+ *     executeQuery(query='INSERT INTO sqlite_master (name, email, joining_date, salary) values(:name, :email, :joining_date, :salary)', values={'name':'John Doe','email':'example@sqlite-electron.com','joining_date':'1250-12-19','salary':8000000})
  */
-export declare function executeQuery(
-  query: string,
-  values?: Array<string | number | null | Buffer>
-): Promise<Boolean>;
+export declare function executeQuery(query: string, values?: Array<string | number | null | Buffer> | Record<string, string | number | null | Buffer>): Promise<Boolean>;
 
 /**
  * Fetches all the records from the database based on the given query
  * and returns the result as an array of the specified type.
  *
  * @param {string} query the SQL query to be executed
- * @param {Array<string | number | null | Buffer>} values optional array of values to be used in the query
+ * @param {Array<string | number | null | Buffer> | Record<string, string | number | null | Buffer>} values - Optional values to bind to the query parameters can be array or object.
  * @return {Promise<Array<T>>} A promise that resolves to an array of objects of the specified type.
+ * 
+ * @example
+ * 
+ *     fetchAll(query='SELECT * FROM sqlite_master')
+ *     fetchAll(query='SELECT * FROM sqlite_master WHERE name = ? AND email = ?', values=['John Doe', 'example@sqlite-electron.com'])
+ *     fetchAll(query='SELECT * FROM sqlite_master WHERE name = :name AND email = :email', values={'name':'John Doe','email':'example@sqlite-electron.com'})
  */
 export declare function fetchAll<T>(
   query: string,
-  values?: Array<string | number | null | Buffer>
+  values?: Array<string | number | null | Buffer> | Record<string, string | number | null | Buffer>
 ): Promise<Array<T>>;
 
 /**
@@ -72,12 +76,18 @@ export declare function fetchAll<T>(
  * and returns the result as an object of the specified type.
  *
  * @param {string} query The SQL query to execute.
- * @param {Array<string | number | null | Buffer>} values Optional values to bind to the query parameters.
+ * @param {Array<string | number | null | Buffer> | Record<string, string | number | null | Buffer>} values - Optional values to bind to the query parameters can be array or object.
  * @return {Promise<T>} A promise that resolves to an object of the specified type.
+ * 
+ * @example
+ * 
+ *     fetchOne(query='SELECT * FROM sqlite_master')
+ *     fetchOne(query='SELECT * FROM sqlite_master WHERE name = ? AND email = ?', values=['John Doe', 'example@sqlite-electron.com'])
+ *     fetchOne(query='SELECT * FROM sqlite_master WHERE name = :name AND email = :email', values={'name':'John Doe','email':'example@sqlite-electron.com'})
  */
 export declare function fetchOne<T>(
   query: string,
-  values?: Array<string | number | null | Buffer>
+  values?: Array<string | number | null | Buffer> | Record<string, string | number | null | Buffer>
 ): Promise<T>;
 
 /**
@@ -86,29 +96,36 @@ export declare function fetchOne<T>(
  *
  * @param {string} query The query to execute on the database.
  * @param {number} size The number of records to fetch.
- * @param {Array<string | number | null | Buffer>} values Optional values to be used in the query parameters.
+ * @param {Array<string | number | null | Buffer> | Record<string, string | number | null | Buffer>} values - Optional values to bind to the query parameters can be array or object.
  * @return {Promise<Array<T>>} A promise that resolves to an array of object of the specified type.
+ * 
+ * @example
+ * 
+ *     fetchMany(query='SELECT * FROM sqlite_master', size=10)
+ *     fetchMany(query='SELECT * FROM sqlite_master WHERE name = ? AND email = ?', size=10, values=['John Doe', 'example@sqlite-electron.com'])
+ *     fetchMany(query='SELECT * FROM sqlite_master WHERE name = :name AND email = :email', size=10, values={'name':'John Doe','email':'example@sqlite-electron.com'})
  */
 export declare function fetchMany<T>(
   query: string,
   size: number,
-  values?: Array<string | number | null | Buffer>
+  values?: Array<string | number | null | Buffer> | Record<string, string | number | null | Buffer>
 ): Promise<Array<T>>;
 
 /**
  * executeMany function executes only one query on multiple values useful for bulk write.
  *
  * @param {string} query - SQL query
- * @param {Array<Array<string | number | null | Buffer>>} values - A param for values used in a SQL query
+ * @param {Array<Array<string | number | null | Buffer>> | Array<Record<string, string | number | null | Buffer>>} values - Optional values to bind to the query parameters can be arrays or array of objects.
  * @return {Promise<Boolean>} boolean
  *
  * @example
  *
- *     executeMany(query='INSERT INTO sqlite_master (name, email, joining_date, salary) values(?,?,?,?)', values=[['John Doe','example@sqlite-electron.com','1250-12-19',8000000], ['John Doe','example@sqlite-electron.com','1250-12-19',8000000]])
+ *     executeMany(query='INSERT INTO sqlite_master (name, email, joining_date, salary) values(?,?,?,?)', values=[['John Doe','example@sqlite-electron.com','1250-12-19',8000000]])
+ *     executeMany(query='INSERT INTO sqlite_master (name, email, joining_date, salary) values(:name, :email, :joining_date, :salary)', values=[{'name':'John Doe','email':'example@sqlite-electron.com','joining_date':'1250-12-19','salary':8000000}])
  */
 export declare function executeMany(
   query: string,
-  values: Array<Array<string | number | null | Buffer>>
+  values: Array<Array<string | number | null | Buffer>> | Array<Record<string, string | number | null | Buffer>>
 ): Promise<boolean>;
 
 /**

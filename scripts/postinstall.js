@@ -1,6 +1,6 @@
 /*
 Postinstall Script for sqlite-electron module
-Copyright (C) 2022-2025  Motagamwala Taha Arif Ali
+Copyright (C) 2022-2026  Motagamwala Taha Arif Ali
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,72 +22,37 @@ const { resolve, dirname } = require('path')
 
 const extract = require('./dependencies')
 
-if (process.platform === 'win32') {
-    const file = fs.createWriteStream(`./sqlite-${process.platform}-${process.arch}.zip`);
-    https.get(`https://github.com/tmotagam/sqlite-electron/releases/download/v3.3.5/sqlite-${process.platform}-${process.arch}.zip`, (response) => {
-        if (response.statusCode === 200) {
-            response.pipe(file);
-            file.on("finish", async () => {
-                file.close();
-                console.log("Download Completed")
-                await extract(resolve(`./sqlite-${process.platform}-${process.arch}.zip`), { dir: dirname(resolve(`./sqlite-${process.platform}-${process.arch}.zip`)) })
-                console.log("Extraction Completed")
-                fs.unlinkSync(resolve(`./sqlite-${process.platform}-${process.arch}.zip`))
-            });
-        } else if (response.statusCode === 302) {
-            https.get(response.headers.location, (response) => {
-                if (response.statusCode === 200) {
-                    response.pipe(file);
-                    file.on("finish", async () => {
-                        file.close();
-                        console.log("Download Completed")
-                        await extract(resolve(`./sqlite-${process.platform}-${process.arch}.zip`), { dir: dirname(resolve(`./sqlite-${process.platform}-${process.arch}.zip`)) })
-                        console.log("Extraction Completed")
-                        fs.unlinkSync(resolve(`./sqlite-${process.platform}-${process.arch}.zip`))
-                    });
-                } else {
-                    throw { code: response.statusCode, message: response.statusMessage, url: `https://github.com/tmotagam/sqlite-electron/releases/download/v3.3.5/sqlite-${process.platform}-${process.arch}.zip` }
-                }
-            })
-        } else {
-            throw { code: response.statusCode, message: response.statusMessage, url: `https://github.com/tmotagam/sqlite-electron/releases/download/v3.3.5/sqlite-${process.platform}-${process.arch}.zip` }
-        }
-    }).on("error", (e) => {
-        throw e
-    })
-} else {
-    const file = fs.createWriteStream(`./sqlite-${process.platform}-${process.arch}.zip`);
-    https.get(`https://github.com/tmotagam/sqlite-electron/releases/download/v3.3.5/sqlite-${process.platform}-${process.arch}.zip`, (response) => {
-        if (response.statusCode === 200) {
-            response.pipe(file);
-            file.on("finish", async () => {
-                file.close();
-                console.log("Download Completed")
-                await extract(resolve(`./sqlite-${process.platform}-${process.arch}.zip`), { dir: dirname(resolve(`./sqlite-${process.platform}-${process.arch}.zip`)) })
-                console.log("Extraction Completed")
-                fs.unlinkSync(resolve(`./sqlite-${process.platform}-${process.arch}.zip`))
-                fs.chmodSync(resolve(`./sqlite-${process.platform}-${process.arch}/sqlite-${process.platform}-${process.arch}`), 0o744)
-            });
-        } else if (response.statusCode === 302) {
-            https.get(response.headers.location, (response) => {
-                if (response.statusCode === 200) {
-                    response.pipe(file);
-                    file.on("finish", async () => {
-                        file.close();
-                        console.log("Download Completed")
-                        await extract(resolve(`./sqlite-${process.platform}-${process.arch}.zip`), { dir: dirname(resolve(`./sqlite-${process.platform}-${process.arch}.zip`)) })
-                        console.log("Extraction Completed")
-                        fs.unlinkSync(resolve(`./sqlite-${process.platform}-${process.arch}.zip`))
-                        fs.chmodSync(resolve(`./sqlite-${process.platform}-${process.arch}/sqlite-${process.platform}-${process.arch}`), 0o744)
-                    });
-                } else {
-                    throw { code: response.statusCode, message: response.statusMessage, url: `https://github.com/tmotagam/sqlite-electron/releases/download/v3.3.5/sqlite-${process.platform}-${process.arch}.zip` }
-                }
-            })
-        } else {
-            throw { code: response.statusCode, message: response.statusMessage, url: `https://github.com/tmotagam/sqlite-electron/releases/download/v3.3.5/sqlite-${process.platform}-${process.arch}.zip` }
-        }
-    }).on("error", (e) => {
-        throw e
-    })
-}
+const platform_arch_identifier = process.env.SQEL_PLATFORM_ARCH_IDENTIFIER || `${process.platform}-${process.arch}`
+
+const file = fs.createWriteStream(`./sqlite-${platform_arch_identifier}.zip`);
+https.get(`https://github.com/tmotagam/sqlite-electron/releases/download/v3.8.5/sqlite-${platform_arch_identifier}.zip`, (response) => {
+    if (response.statusCode === 200) {
+        response.pipe(file);
+        file.on("finish", async () => {
+            file.close();
+            console.log("Download Completed")
+            await extract(resolve(`./sqlite-${platform_arch_identifier}.zip`), { dir: dirname(resolve(`./sqlite-${platform_arch_identifier}.zip`)) })
+            console.log("Extraction Completed")
+            fs.unlinkSync(resolve(`./sqlite-${platform_arch_identifier}.zip`))
+        });
+    } else if (response.statusCode === 302) {
+        https.get(response.headers.location, (response) => {
+            if (response.statusCode === 200) {
+                response.pipe(file);
+                file.on("finish", async () => {
+                    file.close();
+                    console.log("Download Completed")
+                    await extract(resolve(`./sqlite-${platform_arch_identifier}.zip`), { dir: dirname(resolve(`./sqlite-${platform_arch_identifier}.zip`)) })
+                    console.log("Extraction Completed")
+                    fs.unlinkSync(resolve(`./sqlite-${platform_arch_identifier}.zip`))
+                });
+            } else {
+                throw { code: response.statusCode, message: response.statusMessage, url: `https://github.com/tmotagam/sqlite-electron/releases/download/v3.8.5/sqlite-${platform_arch_identifier}.zip` }
+            }
+        })
+    } else {
+        throw { code: response.statusCode, message: response.statusMessage, url: `https://github.com/tmotagam/sqlite-electron/releases/download/v3.8.5/sqlite-${platform_arch_identifier}.zip` }
+    }
+}).on("error", (e) => {
+    throw e
+})

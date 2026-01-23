@@ -1,6 +1,6 @@
 """
-sqlite-electorn server executing the sql queries of the nodejs/electron processes
-Copyright (C) 2020-2025  Motagamwala Taha Arif Ali
+sqlite-electron server executing the sql queries of the nodejs/electron processes
+Copyright (C) 2020-2026  Motagamwala Taha Arif Ali
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ def decodebytes(data: dict[Any, Any]):
             data[key] = {"type": "Buffer", "data": list(val)}
     return data
 
-def encodebytes(data: list[Any]):
+def encodebytes(data: list[Any] | dict[str, Any]):
     """
     Encodes a list of data by converting elements to array objects based on specific conditions.
     
@@ -56,15 +56,27 @@ def encodebytes(data: list[Any]):
     Returns:
         list: The encoded data list.
     """
-    for i, val in enumerate(data):
-        try:
-            v = json.loads(val)
-            if type(v) is dict:
-                if "data" in v and "type" in v:
-                    if v["type"] == "Buffer" and type(v["data"]) is list: # type: ignore
-                        data[i] = array.array("B", v["data"]) # type: ignore
-        except Exception:
-            pass
+    if type(data) is dict:
+        for key, val in data.items():
+            try:
+                if type(val) is dict:
+                    if "data" in val and "type" in val:
+                        if val["type"] == "Buffer" and type(val["data"]) is list: # type: ignore
+                            data[key] = array.array("B", val["data"]) # type: ignore
+            except Exception:
+                pass
+    elif type(data) is list:
+        for i, val in enumerate(data):
+            try:
+                v: dict[str, Any] = json.loads(val)
+                if type(v) is dict:
+                    if "data" in v and "type" in v:
+                        if v["type"] == "Buffer" and type(v["data"]) is list:
+                            data[i] = array.array("B", v["data"]) # type: ignore
+            except Exception:
+                pass
+    else:
+        raise Exception("Invalid data type")
     return data
 
 def newConnection(db: str, isuri: bool, autocommit: bool = True):
@@ -93,7 +105,7 @@ def newConnection(db: str, isuri: bool, autocommit: bool = True):
     except Exception as e:
         return "Error: " + str(e)
 
-def executeQuery(sql: str, values: list[str]):
+def executeQuery(sql: str, values: list[str] | dict[str, Any]):
     """
     Executes an SQL query on the database connection.
 
@@ -124,7 +136,7 @@ def executeQuery(sql: str, values: list[str]):
     except Exception as e:
         return "Error: " + str(e)
 
-def fetchall(sql: str, values: list[str]):
+def fetchall(sql: str, values: list[str] | dict[str, Any]):
     """
     Fetches all rows from the database that match the given SQL query and values.
 
@@ -153,7 +165,7 @@ def fetchall(sql: str, values: list[str]):
     except Exception as e:
         return "Error: " + str(e)
 
-def fetchone(sql: str, values: list[str]):
+def fetchone(sql: str, values: list[str] | dict[str, Any]):
     """
     Fetches a single row from the database that matches the given SQL query and values.
 
@@ -182,7 +194,7 @@ def fetchone(sql: str, values: list[str]):
     except Exception as e:
         return "Error: " + str(e)
 
-def fetchmany(sql: str, size: int, values: list[str]):
+def fetchmany(sql: str, size: int, values: list[str] | dict[str, Any]):
     """
     Fetches multiple rows from the database that match the given SQL query and values.
 
@@ -212,7 +224,7 @@ def fetchmany(sql: str, size: int, values: list[str]):
     except Exception as e:
         return "Error: " + str(e)
 
-def executeMany(sql: str, values: list[list[str]]):
+def executeMany(sql: str, values: list[list[str]] | list[dict[str, Any]]):
     """
     Executes a SQL query with multiple sets of values on the database connection.
 
@@ -237,8 +249,9 @@ def executeMany(sql: str, values: list[list[str]]):
         if conn == None:
             raise ConnectionNotSetUpException("Connection not set up")
 
-        for i in range(0, values.__len__()):
-            values[i] = encodebytes(values[i])
+        for i in range(0, len(values)):
+            vs = values[i]
+            vs = encodebytes(vs)
         conn.executemany(sql, (values))
         return True
 

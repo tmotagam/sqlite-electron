@@ -37,7 +37,7 @@ function Pend() {
   this.error = null;
 }
 
-Pend.prototype.go = function(fn) {
+Pend.prototype.go = function (fn) {
   if (this.pending < this.max) {
     pendGo(this, fn);
   } else {
@@ -45,7 +45,7 @@ Pend.prototype.go = function(fn) {
   }
 };
 
-Pend.prototype.wait = function(cb) {
+Pend.prototype.wait = function (cb) {
   if (this.pending === 0) {
     cb(this.error);
   } else {
@@ -53,7 +53,7 @@ Pend.prototype.wait = function(cb) {
   }
 };
 
-Pend.prototype.hold = function() {
+Pend.prototype.hold = function () {
   return pendHold(this);
 };
 
@@ -131,39 +131,39 @@ function FdSlicer(fd, options) {
   this.autoClose = !!options.autoClose;
 }
 
-FdSlicer.prototype.read = function(buffer, offset, length, position, callback) {
+FdSlicer.prototype.read = function (buffer, offset, length, position, callback) {
   var self = this;
-  self.pend.go(function(cb) {
-    fs.read(self.fd, buffer, offset, length, position, function(err, bytesRead, buffer) {
+  self.pend.go(function (cb) {
+    fs.read(self.fd, buffer, offset, length, position, function (err, bytesRead, buffer) {
       cb();
       callback(err, bytesRead, buffer);
     });
   });
 };
 
-FdSlicer.prototype.write = function(buffer, offset, length, position, callback) {
+FdSlicer.prototype.write = function (buffer, offset, length, position, callback) {
   var self = this;
-  self.pend.go(function(cb) {
-    fs.write(self.fd, buffer, offset, length, position, function(err, written, buffer) {
+  self.pend.go(function (cb) {
+    fs.write(self.fd, buffer, offset, length, position, function (err, written, buffer) {
       cb();
       callback(err, written, buffer);
     });
   });
 };
 
-FdSlicer.prototype.createReadStream = function(options) {
+FdSlicer.prototype.createReadStream = function (options) {
   return new ReadStream(this, options);
 };
 
-FdSlicer.prototype.createWriteStream = function(options) {
+FdSlicer.prototype.createWriteStream = function (options) {
   return new WriteStream(this, options);
 };
 
-FdSlicer.prototype.ref = function() {
+FdSlicer.prototype.ref = function () {
   this.refCount += 1;
 };
 
-FdSlicer.prototype.unref = function() {
+FdSlicer.prototype.unref = function () {
   var self = this;
   self.refCount -= 1;
 
@@ -197,7 +197,7 @@ function ReadStream(context, options) {
   this.destroyed = false;
 }
 
-ReadStream.prototype._read = function(n) {
+ReadStream.prototype._read = function (n) {
   var self = this;
   if (self.destroyed) return;
 
@@ -211,10 +211,10 @@ ReadStream.prototype._read = function(n) {
     self.context.unref();
     return;
   }
-  self.context.pend.go(function(cb) {
+  self.context.pend.go(function (cb) {
     if (self.destroyed) return cb();
     var buffer = Buffer.alloc(toRead);
-    fs.read(self.context.fd, buffer, 0, toRead, self.pos, function(err, bytesRead) {
+    fs.read(self.context.fd, buffer, 0, toRead, self.pos, function (err, bytesRead) {
       if (err) {
         self.destroy(err);
       } else if (bytesRead === 0) {
@@ -230,7 +230,7 @@ ReadStream.prototype._read = function(n) {
   });
 };
 
-ReadStream.prototype.destroy = function(err) {
+ReadStream.prototype.destroy = function (err) {
   if (this.destroyed) return;
   err = err || new Error("stream destroyed");
   this.destroyed = true;
@@ -255,7 +255,7 @@ function WriteStream(context, options) {
   this.on('finish', this.destroy.bind(this));
 }
 
-WriteStream.prototype._write = function(buffer, encoding, callback) {
+WriteStream.prototype._write = function (buffer, encoding, callback) {
   var self = this;
   if (self.destroyed) return;
 
@@ -266,9 +266,9 @@ WriteStream.prototype._write = function(buffer, encoding, callback) {
     callback(err);
     return;
   }
-  self.context.pend.go(function(cb) {
+  self.context.pend.go(function (cb) {
     if (self.destroyed) return cb();
-    fs.write(self.context.fd, buffer, 0, buffer.length, self.pos, function(err, bytes) {
+    fs.write(self.context.fd, buffer, 0, buffer.length, self.pos, function (err, bytes) {
       if (err) {
         self.destroy();
         cb();
@@ -284,7 +284,7 @@ WriteStream.prototype._write = function(buffer, encoding, callback) {
   });
 };
 
-WriteStream.prototype.destroy = function() {
+WriteStream.prototype.destroy = function () {
   if (this.destroyed) return;
   this.destroyed = true;
   this.context.unref();
@@ -300,24 +300,24 @@ function BufferSlicer(buffer, options) {
   this.maxChunkSize = options.maxChunkSize || Number.MAX_SAFE_INTEGER;
 }
 
-BufferSlicer.prototype.read = function(buffer, offset, length, position, callback) {
+BufferSlicer.prototype.read = function (buffer, offset, length, position, callback) {
   var end = position + length;
   var delta = end - this.buffer.length;
   var written = (delta > 0) ? delta : length;
   this.buffer.copy(buffer, offset, position, end);
-  setImmediate(function() {
+  setImmediate(function () {
     callback(null, written);
   });
 };
 
-BufferSlicer.prototype.write = function(buffer, offset, length, position, callback) {
+BufferSlicer.prototype.write = function (buffer, offset, length, position, callback) {
   buffer.copy(this.buffer, position, offset, offset + length);
-  setImmediate(function() {
+  setImmediate(function () {
     callback(null, length, buffer);
   });
 };
 
-BufferSlicer.prototype.createReadStream = function(options) {
+BufferSlicer.prototype.createReadStream = function (options) {
   options = options || {};
   var readStream = new PassThrough(options);
   readStream.destroyed = false;
@@ -343,13 +343,13 @@ BufferSlicer.prototype.createReadStream = function(options) {
   }
 
   readStream.end();
-  readStream.destroy = function() {
+  readStream.destroy = function () {
     readStream.destroyed = true;
   };
   return readStream;
 };
 
-BufferSlicer.prototype.createWriteStream = function(options) {
+BufferSlicer.prototype.createWriteStream = function (options) {
   var bufferSlicer = this;
   options = options || {};
   var writeStream = new Writable(options);
@@ -358,7 +358,7 @@ BufferSlicer.prototype.createWriteStream = function(options) {
   writeStream.bytesWritten = 0;
   writeStream.pos = writeStream.start;
   writeStream.destroyed = false;
-  writeStream._write = function(buffer, encoding, callback) {
+  writeStream._write = function (buffer, encoding, callback) {
     if (writeStream.destroyed) return;
 
     var end = writeStream.pos + buffer.length;
@@ -376,17 +376,17 @@ BufferSlicer.prototype.createWriteStream = function(options) {
     writeStream.emit('progress');
     callback();
   };
-  writeStream.destroy = function() {
+  writeStream.destroy = function () {
     writeStream.destroyed = true;
   };
   return writeStream;
 };
 
-BufferSlicer.prototype.ref = function() {
+BufferSlicer.prototype.ref = function () {
   this.refCount += 1;
 };
 
-BufferSlicer.prototype.unref = function() {
+BufferSlicer.prototype.unref = function () {
   this.refCount -= 1;
 
   if (this.refCount < 0) {
@@ -501,8 +501,8 @@ function ensureBuffer(input) {
   }
 
   var hasNewBufferAPI =
-      typeof Buffer.alloc === "function" &&
-      typeof Buffer.from === "function";
+    typeof Buffer.alloc === "function" &&
+    typeof Buffer.from === "function";
 
   if (typeof input === "number") {
     return hasNewBufferAPI ? Buffer.alloc(input) : newEmptyBuffer(input);
@@ -512,7 +512,7 @@ function ensureBuffer(input) {
   }
   else {
     throw new Error("input must be buffer, number, or string, received " +
-                    typeof input);
+      typeof input);
   }
 }
 
@@ -591,9 +591,9 @@ function open(path, options, callback) {
   if (options.validateEntrySizes == null) options.validateEntrySizes = true;
   if (options.strictFileNames == null) options.strictFileNames = false;
   if (callback == null) callback = defaultCallback;
-  fs.open(path, "r", function(err, fd) {
+  fs.open(path, "r", function (err, fd) {
     if (err) return callback(err);
-    fromFd(fd, options, function(err, zipfile) {
+    fromFd(fd, options, function (err, zipfile) {
       if (err) fs.close(fd, defaultCallback);
       callback(err, zipfile);
     });
@@ -612,9 +612,9 @@ function fromFd(fd, options, callback) {
   if (options.validateEntrySizes == null) options.validateEntrySizes = true;
   if (options.strictFileNames == null) options.strictFileNames = false;
   if (callback == null) callback = defaultCallback;
-  fs.fstat(fd, function(err, stats) {
+  fs.fstat(fd, function (err, stats) {
     if (err) return callback(err);
-    var reader = createFromFd(fd, {autoClose: true});
+    var reader = createFromFd(fd, { autoClose: true });
     fromRandomAccessReader(reader, stats.size, options, callback);
   });
 }
@@ -631,7 +631,7 @@ function fromBuffer(buffer, options, callback) {
   if (options.validateEntrySizes == null) options.validateEntrySizes = true;
   if (options.strictFileNames == null) options.strictFileNames = false;
   // limit the max chunk size. see https://github.com/thejoshwolfe/yauzl/issues/87
-  var reader = createFromBuffer(buffer, {maxChunkSize: 0x10000});
+  var reader = createFromBuffer(buffer, { maxChunkSize: 0x10000 });
   fromRandomAccessReader(reader, buffer.length, options, callback);
 }
 
@@ -667,7 +667,7 @@ function fromRandomAccessReader(reader, totalSize, options, callback) {
   var bufferSize = Math.min(eocdrWithoutCommentSize + maxCommentSize, totalSize);
   var buffer = newBuffer(bufferSize);
   var bufferReadStart = totalSize - buffer.length;
-  readAndAssertNoEof(reader, buffer, 0, bufferSize, bufferReadStart, function(err) {
+  readAndAssertNoEof(reader, buffer, 0, bufferSize, bufferReadStart, function (err) {
     if (err) return callback(err);
     for (var i = bufferSize - eocdrWithoutCommentSize; i >= 0; i -= 1) {
       if (buffer.readUInt32LE(i) !== 0x06054b50) continue;
@@ -696,7 +696,7 @@ function fromRandomAccessReader(reader, totalSize, options, callback) {
       // 22 - Comment
       // the encoding is always cp437.
       var comment = decodeStrings ? decodeBuffer(eocdrBuffer, 22, eocdrBuffer.length, false)
-                                  : eocdrBuffer.slice(22);
+        : eocdrBuffer.slice(22);
 
       if (!(entryCount === 0xffff || centralDirectoryOffset === 0xffffffff)) {
         return callback(null, new ZipFile(reader, centralDirectoryOffset, totalSize, entryCount, comment, options.autoClose, options.lazyEntries, decodeStrings, options.validateEntrySizes, options.strictFileNames));
@@ -707,7 +707,7 @@ function fromRandomAccessReader(reader, totalSize, options, callback) {
       // ZIP64 Zip64 end of central directory locator
       var zip64EocdlBuffer = newBuffer(20);
       var zip64EocdlOffset = bufferReadStart + i - zip64EocdlBuffer.length;
-      readAndAssertNoEof(reader, zip64EocdlBuffer, 0, zip64EocdlBuffer.length, zip64EocdlOffset, function(err) {
+      readAndAssertNoEof(reader, zip64EocdlBuffer, 0, zip64EocdlBuffer.length, zip64EocdlOffset, function (err) {
         if (err) return callback(err);
 
         // 0 - zip64 end of central dir locator signature = 0x07064b50
@@ -721,7 +721,7 @@ function fromRandomAccessReader(reader, totalSize, options, callback) {
 
         // ZIP64 end of central directory record
         var zip64EocdrBuffer = newBuffer(56);
-        readAndAssertNoEof(reader, zip64EocdrBuffer, 0, zip64EocdrBuffer.length, zip64EocdrOffset, function(err) {
+        readAndAssertNoEof(reader, zip64EocdrBuffer, 0, zip64EocdrBuffer.length, zip64EocdrOffset, function (err) {
           if (err) return callback(err);
 
           // 0 - zip64 end of central dir signature                           4 bytes  (0x06064b50)
@@ -755,11 +755,11 @@ function ZipFile(reader, centralDirectoryOffset, fileSize, entryCount, comment, 
   EventEmitter.call(self);
   self.reader = reader;
   // forward close events
-  self.reader.on("error", function(err) {
+  self.reader.on("error", function (err) {
     // error closing the fd
     emitError(self, err);
   });
-  self.reader.once("close", function() {
+  self.reader.once("close", function () {
     self.emit("close");
   });
   self.readEntryCursor = centralDirectoryOffset;
@@ -777,7 +777,7 @@ function ZipFile(reader, centralDirectoryOffset, fileSize, entryCount, comment, 
 
   if (!self.lazyEntries) self._readEntry();
 }
-ZipFile.prototype.close = function() {
+ZipFile.prototype.close = function () {
   if (!this.isOpen) return;
   this.isOpen = false;
   this.reader.unref();
@@ -793,15 +793,15 @@ function emitError(self, err) {
   self.emit("error", err);
 }
 
-ZipFile.prototype.readEntry = function() {
+ZipFile.prototype.readEntry = function () {
   if (!this.lazyEntries) throw new Error("readEntry() called without lazyEntries:true");
   this._readEntry();
 };
-ZipFile.prototype._readEntry = function() {
+ZipFile.prototype._readEntry = function () {
   var self = this;
   if (self.entryCount === self.entriesRead) {
     // done with metadata
-    setImmediate(function() {
+    setImmediate(function () {
       if (self.autoClose) self.close();
       if (self.emittedError) return;
       self.emit("end");
@@ -810,7 +810,7 @@ ZipFile.prototype._readEntry = function() {
   }
   if (self.emittedError) return;
   var buffer = newBuffer(46);
-  readAndAssertNoEof(self.reader, buffer, 0, buffer.length, self.readEntryCursor, function(err) {
+  readAndAssertNoEof(self.reader, buffer, 0, buffer.length, self.readEntryCursor, function (err) {
     if (err) return emitErrorAndAutoClose(self, err);
     if (self.emittedError) return;
     var entry = new Entry();
@@ -854,13 +854,13 @@ ZipFile.prototype._readEntry = function() {
     self.readEntryCursor += 46;
 
     buffer = newBuffer(entry.fileNameLength + entry.extraFieldLength + entry.fileCommentLength);
-    readAndAssertNoEof(self.reader, buffer, 0, buffer.length, self.readEntryCursor, function(err) {
+    readAndAssertNoEof(self.reader, buffer, 0, buffer.length, self.readEntryCursor, function (err) {
       if (err) return emitErrorAndAutoClose(self, err);
       if (self.emittedError) return;
       // 46 - File name
       var isUtf8 = (entry.generalPurposeBitFlag & 0x800) !== 0;
       entry.fileName = self.decodeStrings ? decodeBuffer(buffer, 0, entry.fileNameLength, isUtf8)
-                                          : buffer.slice(0, entry.fileNameLength);
+        : buffer.slice(0, entry.fileNameLength);
 
       // 46+n - Extra field
       var fileCommentStart = entry.fileNameLength + entry.extraFieldLength;
@@ -884,16 +884,16 @@ ZipFile.prototype._readEntry = function() {
 
       // 46+n+m - File comment
       entry.fileComment = self.decodeStrings ? decodeBuffer(buffer, fileCommentStart, fileCommentStart + entry.fileCommentLength, isUtf8)
-                                             : buffer.slice(fileCommentStart, fileCommentStart + entry.fileCommentLength);
+        : buffer.slice(fileCommentStart, fileCommentStart + entry.fileCommentLength);
       // compatibility hack for https://github.com/thejoshwolfe/yauzl/issues/47
       entry.comment = entry.fileComment;
 
       self.readEntryCursor += buffer.length;
       self.entriesRead += 1;
 
-      if (entry.uncompressedSize            === 0xffffffff ||
-          entry.compressedSize              === 0xffffffff ||
-          entry.relativeOffsetOfLocalHeader === 0xffffffff) {
+      if (entry.uncompressedSize === 0xffffffff ||
+        entry.compressedSize === 0xffffffff ||
+        entry.relativeOffsetOfLocalHeader === 0xffffffff) {
         // ZIP64 format
         // find the Zip64 Extended Information Extra Field
         var zip64EiefBuffer = null;
@@ -993,7 +993,7 @@ ZipFile.prototype._readEntry = function() {
   });
 };
 
-ZipFile.prototype.openReadStream = function(entry, options, callback) {
+ZipFile.prototype.openReadStream = function (entry, options, callback) {
   var self = this;
   // parameter validation
   var relativeStart = 0;
@@ -1050,7 +1050,7 @@ ZipFile.prototype.openReadStream = function(entry, options, callback) {
   // make sure we don't lose the fd before we open the actual read stream
   self.reader.ref();
   var buffer = newBuffer(30);
-  readAndAssertNoEof(self.reader, buffer, 0, buffer.length, entry.relativeOffsetOfLocalHeader, function(err) {
+  readAndAssertNoEof(self.reader, buffer, 0, buffer.length, entry.relativeOffsetOfLocalHeader, function (err) {
     try {
       if (err) return callback(err);
       // 0 - Local file header signature = 0x04034b50
@@ -1092,7 +1092,7 @@ ZipFile.prototype.openReadStream = function(entry, options, callback) {
         // we only have 1 thing to check for.
         if (fileDataEnd > self.fileSize) {
           return callback(new Error("file data overflows file bounds: " +
-              fileDataStart + " + " + entry.compressedSize + " > " + self.fileSize));
+            fileDataStart + " + " + entry.compressedSize + " > " + self.fileSize));
         }
       }
       var readStream = self.reader.createReadStream({
@@ -1103,9 +1103,9 @@ ZipFile.prototype.openReadStream = function(entry, options, callback) {
       if (decompress) {
         var destroyed = false;
         var inflateFilter = zlib.createInflateRaw();
-        readStream.on("error", function(err) {
+        readStream.on("error", function (err) {
           // setImmediate here because errors can be emitted during the first call to pipe()
-          setImmediate(function() {
+          setImmediate(function () {
             if (!destroyed) inflateFilter.emit("error", err);
           });
         });
@@ -1113,9 +1113,9 @@ ZipFile.prototype.openReadStream = function(entry, options, callback) {
 
         if (self.validateEntrySizes) {
           endpointStream = new AssertByteCountStream(entry.uncompressedSize);
-          inflateFilter.on("error", function(err) {
+          inflateFilter.on("error", function (err) {
             // forward zlib errors to the client-visible stream
-            setImmediate(function() {
+            setImmediate(function () {
               if (!destroyed) endpointStream.emit("error", err);
             });
           });
@@ -1125,7 +1125,7 @@ ZipFile.prototype.openReadStream = function(entry, options, callback) {
           endpointStream = inflateFilter;
         }
         // this is part of yauzl's API, so implement this function on the client-visible stream
-        endpointStream.destroy = function() {
+        endpointStream.destroy = function () {
           destroyed = true;
           if (inflateFilter !== endpointStream) inflateFilter.unpipe(endpointStream);
           readStream.unpipe(inflateFilter);
@@ -1142,13 +1142,13 @@ ZipFile.prototype.openReadStream = function(entry, options, callback) {
 
 function Entry() {
 }
-Entry.prototype.getLastModDate = function() {
+Entry.prototype.getLastModDate = function () {
   return dosDateTimeToDate(this.lastModFileDate, this.lastModFileTime);
 };
-Entry.prototype.isEncrypted = function() {
+Entry.prototype.isEncrypted = function () {
   return (this.generalPurposeBitFlag & 0x1) !== 0;
 };
-Entry.prototype.isCompressed = function() {
+Entry.prototype.isCompressed = function () {
   return this.compressionMethod === 8;
 };
 
@@ -1182,9 +1182,9 @@ function validateFileName(fileName) {
 function readAndAssertNoEof(reader, buffer, offset, length, position, callback) {
   if (length === 0) {
     // fs.read will throw an out-of-bounds error if you try to read 0 bytes from a 0 byte file
-    return setImmediate(function() { callback(null, newBuffer(0)); });
+    return setImmediate(function () { callback(null, newBuffer(0)); });
   }
-  reader.read(buffer, offset, length, position, function(err, bytesRead) {
+  reader.read(buffer, offset, length, position, function (err, bytesRead) {
     if (err) return callback(err);
     if (bytesRead < length) {
       return callback(new Error("unexpected EOF"));
@@ -1199,7 +1199,7 @@ function AssertByteCountStream(byteCount) {
   this.actualByteCount = 0;
   this.expectedByteCount = byteCount;
 }
-AssertByteCountStream.prototype._transform = function(chunk, encoding, cb) {
+AssertByteCountStream.prototype._transform = function (chunk, encoding, cb) {
   this.actualByteCount += chunk.length;
   if (this.actualByteCount > this.expectedByteCount) {
     var msg = "too many bytes in the stream. expected " + this.expectedByteCount + ". got at least " + this.actualByteCount;
@@ -1207,7 +1207,7 @@ AssertByteCountStream.prototype._transform = function(chunk, encoding, cb) {
   }
   cb(null, chunk);
 };
-AssertByteCountStream.prototype._flush = function(cb) {
+AssertByteCountStream.prototype._flush = function (cb) {
   if (this.actualByteCount < this.expectedByteCount) {
     var msg = "not enough bytes in the stream. expected " + this.expectedByteCount + ". got only " + this.actualByteCount;
     return cb(new Error(msg));
@@ -1220,10 +1220,10 @@ function RandomAccessReader() {
   EventEmitter.call(this);
   this.refCount = 0;
 }
-RandomAccessReader.prototype.ref = function() {
+RandomAccessReader.prototype.ref = function () {
   this.refCount += 1;
 };
-RandomAccessReader.prototype.unref = function() {
+RandomAccessReader.prototype.unref = function () {
   var self = this;
   self.refCount -= 1;
 
@@ -1237,12 +1237,12 @@ RandomAccessReader.prototype.unref = function() {
     self.emit('close');
   }
 };
-RandomAccessReader.prototype.createReadStream = function(options) {
+RandomAccessReader.prototype.createReadStream = function (options) {
   var start = options.start;
   var end = options.end;
   if (start === end) {
     var emptyStream = new PassThrough();
-    setImmediate(function() {
+    setImmediate(function () {
       emptyStream.end();
     });
     return emptyStream;
@@ -1251,24 +1251,24 @@ RandomAccessReader.prototype.createReadStream = function(options) {
 
   var destroyed = false;
   var refUnrefFilter = new RefUnrefFilter(this);
-  stream.on("error", function(err) {
-    setImmediate(function() {
+  stream.on("error", function (err) {
+    setImmediate(function () {
       if (!destroyed) refUnrefFilter.emit("error", err);
     });
   });
-  refUnrefFilter.destroy = function() {
+  refUnrefFilter.destroy = function () {
     stream.unpipe(refUnrefFilter);
     refUnrefFilter.unref();
     stream.destroy();
   };
 
   var byteCounter = new AssertByteCountStream(end - start);
-  refUnrefFilter.on("error", function(err) {
-    setImmediate(function() {
+  refUnrefFilter.on("error", function (err) {
+    setImmediate(function () {
       if (!destroyed) byteCounter.emit("error", err);
     });
   });
-  byteCounter.destroy = function() {
+  byteCounter.destroy = function () {
     destroyed = true;
     refUnrefFilter.unpipe(byteCounter);
     refUnrefFilter.destroy();
@@ -1276,25 +1276,25 @@ RandomAccessReader.prototype.createReadStream = function(options) {
 
   return stream.pipe(refUnrefFilter).pipe(byteCounter);
 };
-RandomAccessReader.prototype._readStreamForRange = function(start, end) {
+RandomAccessReader.prototype._readStreamForRange = function (start, end) {
   throw new Error("not implemented");
 };
-RandomAccessReader.prototype.read = function(buffer, offset, length, position, callback) {
-  var readStream = this.createReadStream({start: position, end: position + length});
+RandomAccessReader.prototype.read = function (buffer, offset, length, position, callback) {
+  var readStream = this.createReadStream({ start: position, end: position + length });
   var writeStream = new Writable();
   var written = 0;
-  writeStream._write = function(chunk, encoding, cb) {
+  writeStream._write = function (chunk, encoding, cb) {
     chunk.copy(buffer, offset + written, 0, chunk.length);
     written += chunk.length;
     cb();
   };
   writeStream.on("finish", callback);
-  readStream.on("error", function(error) {
+  readStream.on("error", function (error) {
     callback(error);
   });
   readStream.pipe(writeStream);
 };
-RandomAccessReader.prototype.close = function(callback) {
+RandomAccessReader.prototype.close = function (callback) {
   setImmediate(callback);
 };
 
@@ -1305,11 +1305,11 @@ function RefUnrefFilter(context) {
   this.context.ref();
   this.unreffedYet = false;
 }
-RefUnrefFilter.prototype._flush = function(cb) {
+RefUnrefFilter.prototype._flush = function (cb) {
   this.unref();
   cb();
 };
-RefUnrefFilter.prototype.unref = function(cb) {
+RefUnrefFilter.prototype.unref = function (cb) {
   if (this.unreffedYet) return;
   this.unreffedYet = true;
   this.context.unref();
@@ -1343,11 +1343,11 @@ function readUInt64LE(buffer, offset) {
 // Node 10 deprecated new Buffer().
 var newBuffer;
 if (typeof Buffer.allocUnsafe === "function") {
-  newBuffer = function(len) {
+  newBuffer = function (len) {
     return Buffer.allocUnsafe(len);
   };
 } else {
-  newBuffer = function(len) {
+  newBuffer = function (len) {
     return Buffer.alloc(len);
   };
 }
@@ -1379,60 +1379,60 @@ const { PassThrough: PassThroughStream } = require('stream')
 const { pipeline: streamPipeline } = require('stream/promises')
 
 class MaxBufferError extends Error {
-	name = 'MaxBufferError';
+  name = 'MaxBufferError';
 
-	constructor() {
-		super('maxBuffer exceeded');
-	}
+  constructor() {
+    super('maxBuffer exceeded');
+  }
 }
 
 async function getStream(inputStream, options) {
-	if (!inputStream) {
-		throw new Error('Expected a stream');
-	}
+  if (!inputStream) {
+    throw new Error('Expected a stream');
+  }
 
-	options = {
-		maxBuffer: Number.POSITIVE_INFINITY,
-		...options,
-	};
+  options = {
+    maxBuffer: Number.POSITIVE_INFINITY,
+    ...options,
+  };
 
-	const {maxBuffer} = options;
-	let {encoding = 'utf8'} = options;
-	const isBuffer = encoding === 'buffer';
+  const { maxBuffer } = options;
+  let { encoding = 'utf8' } = options;
+  const isBuffer = encoding === 'buffer';
 
-	if (isBuffer) {
-		encoding = null;
-	}
+  if (isBuffer) {
+    encoding = null;
+  }
 
-	const stream = new PassThroughStream();
+  const stream = new PassThroughStream();
 
-	if (encoding) {
-		stream.setEncoding(encoding);
-	}
+  if (encoding) {
+    stream.setEncoding(encoding);
+  }
 
-	await streamPipeline(inputStream, stream);
+  await streamPipeline(inputStream, stream);
 
-	let length = 0;
-	const chunks = [];
+  let length = 0;
+  const chunks = [];
 
-	const getBufferedValue = () => isBuffer ? Buffer.concat(chunks, length) : chunks.join('');
+  const getBufferedValue = () => isBuffer ? Buffer.concat(chunks, length) : chunks.join('');
 
-	for await (const chunk of stream) {
-		chunks.push(chunk);
-		length += chunk.length;
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+    length += chunk.length;
 
-		if (length > maxBuffer) {
-			const error = new MaxBufferError();
+    if (length > maxBuffer) {
+      const error = new MaxBufferError();
 
-			if (length <= BufferConstants.MAX_LENGTH) {
-				error.bufferedData = getBufferedValue();
-			}
+      if (length <= BufferConstants.MAX_LENGTH) {
+        error.bufferedData = getBufferedValue();
+      }
 
-			throw error;
-		}
-	}
+      throw error;
+    }
+  }
 
-	return getBufferedValue();
+  return getBufferedValue();
 }
 
 /*
@@ -1474,12 +1474,12 @@ const openZip = promisify(open)
 const pipeline = promisify(stream.pipeline)
 
 class Extractor {
-  constructor (zipPath, opts) {
+  constructor(zipPath, opts) {
     this.zipPath = zipPath
     this.opts = opts
   }
 
-  async extract () {
+  async extract() {
 
     this.zipfile = await openZip(this.zipPath, { lazyEntries: true })
     this.canceled = false
@@ -1531,7 +1531,7 @@ class Extractor {
     })
   }
 
-  async extractEntry (entry) {
+  async extractEntry(entry) {
     /* istanbul ignore if */
     if (this.canceled) {
       return
@@ -1584,7 +1584,7 @@ class Extractor {
     }
   }
 
-  getExtractedMode (entryMode, isDir) {
+  getExtractedMode(entryMode, isDir) {
     let mode = entryMode
     // Set defaults, if necessary
     if (mode === 0) {

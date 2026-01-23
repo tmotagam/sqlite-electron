@@ -12,23 +12,25 @@ const exitHandler = () => {
 
 const setdbPath = async (path: string, isuri = false, autocommit = true): Promise<boolean> => {
   if (sqlite === null) {
-    let sqlitePath = "";
+    const sqliteFilePath = join(__dirname, "..", "sqlite.py");
+    let pyPath = "";
     if (process.platform === "win32") {
-      sqlitePath = join(
+      pyPath = join(
         __dirname,
         "..",
-        `sqlite-${process.platform}-${process.arch}`,
-        `sqlite-${process.platform}-${process.arch}.exe`
+        'python',
+        'python.exe'
       );
     } else {
-      sqlitePath = join(
+      pyPath = join(
         __dirname,
         "..",
-        `sqlite-${process.platform}-${process.arch}`,
-        `sqlite-${process.platform}-${process.arch}`
+        'python',
+        'bin',
+        'python'
       );
     }
-    sqlite = execFile(sqlitePath, { maxBuffer: 10 * 1024 * 1024 });
+    sqlite = execFile(pyPath, [sqliteFilePath], { maxBuffer: 10 * 1024 * 1024 });
     if (sqlite !== null) {
       //Exit when app is closing
       process.on("exit", exitHandler.bind(null));
@@ -69,7 +71,7 @@ const setdbPath = async (path: string, isuri = false, autocommit = true): Promis
 
 const executeQuery = async (
   query: string,
-  values: Array<string | number | null | Buffer> = []
+  values: Array<string | number | null | Buffer> | Record<string, string | number | null | Buffer> = []
 ): Promise<Boolean> => {
   return new Promise((resolve, reject) => {
     try {
@@ -86,11 +88,21 @@ const executeQuery = async (
       };
 
       sqlite.stdout.on("data", onData);
-      for (let i = 0; i < values.length; i++) {
-        if (!Buffer.isBuffer(values[i])) {
-          continue;
+
+      if (Array.isArray(values)) {
+        for (let i = 0; i < values.length; i++) {
+          if (Buffer.isBuffer(values[i])) {
+            values[i] = JSON.stringify(values[i]);
+          }
         }
-        values[i] = JSON.stringify(values[i]);
+      } else {
+        const payloadValues = { ...values };
+
+        for (const key in payloadValues) {
+          if (Buffer.isBuffer(payloadValues[key])) {
+            payloadValues[key] = JSON.stringify(payloadValues[key]);
+          }
+        }
       }
       sqlite.stdin.write(
         `${JSON.stringify(["executeQuery", query, values])}\n`
@@ -103,7 +115,7 @@ const executeQuery = async (
 
 const fetchAll = async (
   query: string,
-  values: Array<string | number | null | Buffer> = []
+  values: Array<string | number | null | Buffer> | Record<string, string | number | null | Buffer> = []
 ): Promise<Array<Type>> => {
   return new Promise((resolve, reject) => {
     try {
@@ -140,11 +152,21 @@ const fetchAll = async (
       };
 
       sqlite.stdout.on("data", onData);
-      for (let i = 0; i < values.length; i++) {
-        if (!Buffer.isBuffer(values[i])) {
-          continue;
+
+      if (Array.isArray(values)) {
+        for (let i = 0; i < values.length; i++) {
+          if (Buffer.isBuffer(values[i])) {
+            values[i] = JSON.stringify(values[i]);
+          }
         }
-        values[i] = JSON.stringify(values[i]);
+      } else {
+        const payloadValues = { ...values };
+
+        for (const key in payloadValues) {
+          if (Buffer.isBuffer(payloadValues[key])) {
+            payloadValues[key] = JSON.stringify(payloadValues[key]);
+          }
+        }
       }
       sqlite.stdin.write(`${JSON.stringify(["fetchall", query, values])}\n`);
     } catch (error) {
@@ -155,7 +177,7 @@ const fetchAll = async (
 
 const fetchOne = async (
   query: string,
-  values: Array<string | number | null | Buffer> = []
+  values: Array<string | number | null | Buffer> | Record<string, string | number | null | Buffer> = []
 ): Promise<Type> => {
   return new Promise((resolve, reject) => {
     try {
@@ -189,11 +211,21 @@ const fetchOne = async (
       };
 
       sqlite.stdout.on("data", onData);
-      for (let i = 0; i < values.length; i++) {
-        if (!Buffer.isBuffer(values[i])) {
-          continue;
+
+      if (Array.isArray(values)) {
+        for (let i = 0; i < values.length; i++) {
+          if (Buffer.isBuffer(values[i])) {
+            values[i] = JSON.stringify(values[i]);
+          }
         }
-        values[i] = JSON.stringify(values[i]);
+      } else {
+        const payloadValues = { ...values };
+
+        for (const key in payloadValues) {
+          if (Buffer.isBuffer(payloadValues[key])) {
+            payloadValues[key] = JSON.stringify(payloadValues[key]);
+          }
+        }
       }
       sqlite.stdin.write(`${JSON.stringify(["fetchone", query, values])}\n`);
     } catch (error) {
@@ -205,7 +237,7 @@ const fetchOne = async (
 const fetchMany = async (
   query: string,
   size: number,
-  values: Array<string | number | null | Buffer> = []
+  values: Array<string | number | null | Buffer> | Record<string, string | number | null | Buffer> = []
 ): Promise<Array<Type>> => {
   return new Promise((resolve, reject) => {
     try {
@@ -242,11 +274,21 @@ const fetchMany = async (
       };
 
       sqlite.stdout.on("data", onData);
-      for (let i = 0; i < values.length; i++) {
-        if (!Buffer.isBuffer(values[i])) {
-          continue;
+
+      if (Array.isArray(values)) {
+        for (let i = 0; i < values.length; i++) {
+          if (Buffer.isBuffer(values[i])) {
+            values[i] = JSON.stringify(values[i]);
+          }
         }
-        values[i] = JSON.stringify(values[i]);
+      } else {
+        const payloadValues = { ...values };
+
+        for (const key in payloadValues) {
+          if (Buffer.isBuffer(payloadValues[key])) {
+            payloadValues[key] = JSON.stringify(payloadValues[key]);
+          }
+        }
       }
       sqlite.stdin.write(
         `${JSON.stringify(["fetchmany", query, size, values])}\n`
@@ -259,7 +301,7 @@ const fetchMany = async (
 
 const executeMany = async (
   query: string,
-  values: Array<Array<string | number | null | Buffer>>
+  values: Array<Array<string | number | null | Buffer>> | Array<Record<string, string | number | null | Buffer>>
 ): Promise<boolean> => {
   return new Promise((resolve, reject) => {
     try {
@@ -276,12 +318,22 @@ const executeMany = async (
       };
 
       sqlite.stdout.on("data", onData);
-      for (let i = 0; i < values.length; i++) {
-        for (let j = 0; j < values[i].length; j++) {
-          if (!Buffer.isBuffer(values[i][j])) {
-            continue;
+      for (let j = 0; j < values.length; j++) {
+        const v = values[j];
+        if (Array.isArray(v)) {
+          for (let i = 0; i < v.length; i++) {
+            if (Buffer.isBuffer(v[i])) {
+              v[i] = JSON.stringify(v[i]);
+            }
           }
-          values[i][j] = JSON.stringify(values[i][j]);
+        } else {
+          const payloadValues = { ...v };
+
+          for (const key in payloadValues) {
+            if (Buffer.isBuffer(payloadValues[key])) {
+              payloadValues[key] = JSON.stringify(payloadValues[key]);
+            }
+          }
         }
       }
       sqlite.stdin.write(`${JSON.stringify(["executeMany", query, values])}\n`);

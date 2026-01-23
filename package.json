@@ -1,9 +1,9 @@
 {
   "name": "sqlite-electron",
-  "version": "3.3.5",
+  "version": "3.8.5",
   "description": "A module for electron to use sqlite3 without rebuilding",
   "main": "./cjs/sqlite-electron.js",
-  "module": "./esm.sqlite-electron.mjs",
+  "module": "./esm/sqlite-electron.mjs",
   "types": "./sqlite-electron.d.ts",
   "scripts": {
     "postinstall": "node ./scripts/postinstall.js"
@@ -18,7 +18,8 @@
     "cjs",
     "esm",
     "sqlite-electron.d.ts",
-    "scripts"
+    "scripts",
+    "sqlite.py"
   ],
   "license": "GPL-3.0-or-later",
   "keywords": [
