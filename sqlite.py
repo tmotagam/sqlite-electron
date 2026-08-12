@@ -16,9 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import array
 import sys, json, sqlite3
-from sqlite3 import dump # type: ignore
+from sqlite3 import dump
 from typing import Any
 
 conn: None | sqlite3.Connection = None
@@ -59,10 +58,11 @@ def encodebytes(data: list[Any] | dict[str, Any]):
     if type(data) is dict:
         for key, val in data.items():
             try:
-                if type(val) is dict:
-                    if "data" in val and "type" in val:
-                        if val["type"] == "Buffer" and type(val["data"]) is list: # type: ignore
-                            data[key] = array.array("B", val["data"]) # type: ignore
+                v: dict[str, Any] = json.loads(val)
+                if type(v) is dict:
+                    if "data" in v and "type" in v:
+                        if v["type"] == "Buffer" and type(v["data"]) is list:
+                            data[key] = bytes(v["data"])
             except Exception:
                 pass
     elif type(data) is list:
@@ -72,7 +72,7 @@ def encodebytes(data: list[Any] | dict[str, Any]):
                 if type(v) is dict:
                     if "data" in v and "type" in v:
                         if v["type"] == "Buffer" and type(v["data"]) is list:
-                            data[i] = array.array("B", v["data"]) # type: ignore
+                            data[i] = bytes(v["data"])
             except Exception:
                 pass
     else:
@@ -121,10 +121,10 @@ def executeQuery(sql: str, values: list[str] | dict[str, Any]):
     """
     try:
         global conn
-        if conn == None:
+        if conn is None:
             raise ConnectionNotSetUpException("Connection not set up")
         
-        if not(not values):
+        if values.__len__() > 0:
             values = encodebytes(values)
             conn.execute(sql, values)
             return True
@@ -152,10 +152,10 @@ def fetchall(sql: str, values: list[str] | dict[str, Any]):
         ConnectionNotSetUpException: If the database connection is not set up.
     """
     try:
-        if conn == None:
+        if conn is None:
             raise ConnectionNotSetUpException("Connection not set up")
         
-        if not(not values):
+        if values.__len__() > 0:
             values = encodebytes(values)
             return [decodebytes(dict(i)) for i in conn.execute(sql, values).fetchall()]
         
@@ -181,15 +181,17 @@ def fetchone(sql: str, values: list[str] | dict[str, Any]):
         ConnectionNotSetUpException: If the database connection is not set up.
     """
     try:
-        if conn == None:
+        if conn is None:
             raise ConnectionNotSetUpException("Connection not set up")
         
-        if not(not values):
+        if values.__len__() > 0:
             values = encodebytes(values)
-            return decodebytes(dict(conn.execute(sql, values).fetchone()))
+            val = conn.execute(sql, values).fetchone()
+            return decodebytes(dict({} if val is None else val))
         
         else:
-            return decodebytes(dict(conn.execute(sql).fetchone()))
+            val = conn.execute(sql).fetchone()
+            return decodebytes(dict({} if val is None else val))
         
     except Exception as e:
         return "Error: " + str(e)
@@ -211,10 +213,10 @@ def fetchmany(sql: str, size: int, values: list[str] | dict[str, Any]):
         ConnectionNotSetUpException: If the database connection is not set up.
     """
     try:
-        if conn == None:
+        if conn is None:
             raise ConnectionNotSetUpException("Connection not set up")
         
-        if not(not values):
+        if values.__len__() > 0:
             values = encodebytes(values)
             return [decodebytes(dict(i)) for i in conn.execute(sql, values).fetchmany(size)]
 
@@ -246,12 +248,11 @@ def executeMany(sql: str, values: list[list[str]] | list[dict[str, Any]]):
     """
     try:
         global conn
-        if conn == None:
+        if conn is None:
             raise ConnectionNotSetUpException("Connection not set up")
 
         for i in range(0, len(values)):
-            vs = values[i]
-            vs = encodebytes(vs)
+            values[i] = encodebytes(values[i])
         conn.executemany(sql, (values))
         return True
 
@@ -273,7 +274,7 @@ def executeScript(sqlScript: str):
     """
     try:
         global conn
-        if conn == None:
+        if conn is None:
             raise ConnectionNotSetUpException("Connection not set up")
         with open(sqlScript, "r") as sql_file:
             sql = sql_file.read()
@@ -283,19 +284,20 @@ def executeScript(sqlScript: str):
 
     except Exception as e:
         try:
-            if conn == None:
+            if conn is None:
                 raise ConnectionNotSetUpException("Connection not set up")
             conn.executescript(sqlScript)
             return True
         except Exception as e:
             return "Error: " + str(e)
 
-def load_extension(name: str):
+def load_extension(name: str, entrypoint: str | None = None):
     """
     This function loads an extension into the database.
 
     Args:
         name (str): The name of the extension to load.
+        entrypoint (str | None): Optional. The name of the extension entrypoint.
 
     Returns:
         bool or str: True if the extension is loaded successfully, otherwise a string containing the error message.
@@ -304,11 +306,14 @@ def load_extension(name: str):
         ConnectionNotSetUpException: If the database connection is not set up.
     """
     try:
-        if conn == None:
+        if conn is None:
             raise ConnectionNotSetUpException("Connection not set up")
         
         conn.enable_load_extension(True)
-        conn.load_extension(name)
+        if entrypoint is None:
+            conn.load_extension(name)
+        else:
+            conn.load_extension(name, entrypoint=entrypoint)
         conn.enable_load_extension(False)
         return True
 
@@ -333,7 +338,7 @@ def backup(target: str, pages: int, name: str, sleep: int):
     """
 
     try:
-        if conn == None:
+        if conn is None:
             raise ConnectionNotSetUpException("Connection not set up")
         
         dst  = sqlite3.connect(target)
@@ -361,7 +366,7 @@ def iterdump(file: str,filter: str | None =None):
     """
 
     try:
-        if conn == None:
+        if conn is None:
             raise ConnectionNotSetUpException("Connection not set up")
         with open(file, "w") as f:
             f.write("\n".join(conn.iterdump(filter=filter)))
@@ -389,48 +394,32 @@ def main():
 
     The function reads lines of input from the standard input until it encounters a newline character. It then processes the input line by parsing it as a JSON array and executing the corresponding command
     """
-    while True:
-        line: list[str] = []
+    try:
+        dispatch = {
+            "newConnection": lambda args: newConnection(*args),
+            "executeQuery": lambda args: executeQuery(*args),
+            "fetchall": lambda args: fetchall(*args),
+            "fetchmany": lambda args: fetchmany(*args),
+            "fetchone": lambda args: fetchone(*args),
+            "executeMany": lambda args: executeMany(*args),
+            "executeScript": lambda args: executeScript(*args),
+            "load_extension": lambda args: load_extension(*args),
+            "backup": lambda args: backup(*args),
+            "iterdump": lambda args: iterdump(*args),
+        }
         while True:
-            lines = sys.stdin.read(1)
-            line.append(lines)
-            if lines == "\n":
+            a = sys.stdin.readline()
+            if not a:
                 break
-        a = "".join([str(item) for item in line])
-        nodesdtin = json.loads(a)
-        if nodesdtin[0] == "newConnection":
-            sys.stdout.write(f"{json.dumps(newConnection(nodesdtin[1], nodesdtin[2], nodesdtin[3]))}EOF")
+            
+            nodesdtin = json.loads(a)
+            handler = dispatch.get(nodesdtin[0])
+            result = handler(nodesdtin[1:]) if handler else "Error: Invalid command"
+            sys.stdout.write(f"{json.dumps(result)}EOF")
             sys.stdout.flush()
-        elif nodesdtin[0] == "executeQuery":
-            sys.stdout.write(f"{json.dumps(executeQuery(nodesdtin[1], nodesdtin[2]))}EOF")
-            sys.stdout.flush()
-        elif nodesdtin[0] == "fetchall":
-            sys.stdout.write(f"{json.dumps(fetchall(nodesdtin[1], nodesdtin[2]))}EOF")
-            sys.stdout.flush()
-        elif nodesdtin[0] == "fetchmany":
-            sys.stdout.write(f"{json.dumps(fetchmany(nodesdtin[1], nodesdtin[2], nodesdtin[3]))}EOF")
-            sys.stdout.flush()
-        elif nodesdtin[0] == "fetchone":
-            sys.stdout.write(f"{json.dumps(fetchone(nodesdtin[1], nodesdtin[2]))}EOF")
-            sys.stdout.flush()
-        elif nodesdtin[0] == "executeMany":
-            sys.stdout.write(f"{json.dumps(executeMany(nodesdtin[1], nodesdtin[2]))}EOF")
-            sys.stdout.flush()
-        elif nodesdtin[0] == "executeScript":
-            sys.stdout.write(f"{json.dumps(executeScript(nodesdtin[1]))}EOF")
-            sys.stdout.flush()
-        elif nodesdtin[0] == "load_extension":
-            sys.stdout.write(f"{json.dumps(load_extension(nodesdtin[1]))}EOF")
-            sys.stdout.flush()
-        elif nodesdtin[0] == "backup":
-            sys.stdout.write(f"{json.dumps(backup(nodesdtin[1], nodesdtin[2], nodesdtin[3], nodesdtin[4]))}EOF")
-            sys.stdout.flush()
-        elif nodesdtin[0] == "iterdump":
-            sys.stdout.write(f"{json.dumps(iterdump(nodesdtin[1], nodesdtin[2]))}EOF")
-            sys.stdout.flush()
-        else:
-            sys.stdout.write(f"{json.dumps('Error: Invalid command')}EOF")
-            sys.stdout.flush()
+    except Exception as e:
+        sys.stdout.write(f"{json.dumps('Error: ' + str(e))}EOF")
+        sys.stdout.flush()
 
 
 main()

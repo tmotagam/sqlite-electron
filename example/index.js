@@ -86,9 +86,9 @@ ipcMain.handle("executeScript", async (event, scriptpath) => {
   }
 });
 
-ipcMain.handle("load_extension", async (event, path) => {
+ipcMain.handle("load_extension", async (event, path, entrypoint) => {
   try {
-    return await load_extension(path);
+    return await load_extension(path, entrypoint);
   } catch (error) {
     return error;
   }

@@ -86,8 +86,8 @@ contextBridge.exposeInMainWorld('api', {
   },
   load_extension: async () => {
     const path = document.getElementById('extensionPath').value
-    const res = await ipcRenderer.invoke('load_extension', path);
-    console.log(res);
+    const entrypoint = document.getElementById('extentionEntrypoint').value
+    const res = await ipcRenderer.invoke('load_extension', path, !entrypoint ? null : entrypoint);
     document.getElementById('pout4').innerText = 'Output: ' + res;
   },
   backup: async () => {
@@ -96,14 +96,12 @@ contextBridge.exposeInMainWorld('api', {
     const name = document.getElementById('name').value
     const sleep = document.getElementById('sleep').value
     const res = await ipcRenderer.invoke('backup', target, pages, name, sleep);
-    console.log(res);
     document.getElementById('pout5').innerText = 'Output: ' + res;
   },
   iterdump: async () => {
     const path = document.getElementById('iterdumpPath').value
     const filter = document.getElementById('iterdumpFilter').value
     const res = await ipcRenderer.invoke('iterdump', path, filter);
-    console.log(res);
     document.getElementById('pout6').innerText = 'Output: ' + res;
   }
 })

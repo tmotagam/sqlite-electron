@@ -145,13 +145,15 @@ export declare function executeScript(scriptname: string): Promise<Boolean>;
  * load_extension function loads an extension into the database.
  *
  * @param {string} path - Path of the extension
+ * @param {string} entrypoint - Name of the extension entrypoint
  * @return {Promise<Boolean>} boolean
  *
  * @example
  *
  *     load_extension(path='./fts5')
+ *     load_extension(path='./myextension', entrypoint='myexten_init')
  */
-export declare function load_extension(path: string): Promise<Boolean>;
+export declare function load_extension(path: string, entrypoint?: string): Promise<Boolean>;
 
 /**
  * backup function creates a backup of the database.
@@ -172,7 +174,7 @@ export declare function backup(target: string, pages?: number, name?: string, sl
  * iterdump function generates an iterable of SQL commands that can recreate the entire database schema and data.
  *
  * @param {string} file - The name of the file to dump the data to in sql format.
- * @param {string} filter - The filter to use when dumping the data.
+ * @param {string | null} filter - The filter to use when dumping the data.
  * @return {Promise<Boolean>} boolean
  *
  * @example

@@ -1,14 +1,3 @@
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function (t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -55,12 +44,111 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 import { execFile } from "child_process";
-import { join } from "path";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
+import { Buffer } from "buffer";
+import process from "process";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 var sqlite = null;
 var exitHandler = function () {
     if (sqlite !== null) {
         sqlite.kill();
     }
+};
+var deserializeBuffers = function (data) {
+    if (data === null || typeof data !== "object")
+        return data;
+    if (data.type === "Buffer" && Array.isArray(data.data)) {
+        return Buffer.from(data.data);
+    }
+    if (Array.isArray(data)) {
+        for (var i = 0; i < data.length; i++) {
+            data[i] = deserializeBuffers(data[i]);
+        }
+    }
+    else {
+        for (var key in data) {
+            data[key] = deserializeBuffers(data[key]);
+        }
+    }
+    return data;
+};
+var serializeValues = function (values) {
+    if (Array.isArray(values)) {
+        for (var i = 0; i < values.length; i++) {
+            if (Buffer.isBuffer(values[i])) {
+                values[i] = JSON.stringify(values[i]);
+            }
+            else if (typeof values[i] === "object" && values[i] !== null) {
+                var v = values[i];
+                if (Array.isArray(v)) {
+                    for (var j = 0; j < v.length; j++) {
+                        if (Buffer.isBuffer(v[j])) {
+                            v[j] = JSON.stringify(v[j]);
+                        }
+                    }
+                }
+                else {
+                    for (var key in v) {
+                        if (Buffer.isBuffer(v[key])) {
+                            v[key] = JSON.stringify(v[key]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else if (typeof values === "object" && values !== null) {
+        for (var key in values) {
+            if (Buffer.isBuffer(values[key])) {
+                values[key] = JSON.stringify(values[key]);
+            }
+        }
+    }
+};
+var sendCommand = function (commandData) {
+    return new Promise(function (resolve, reject) {
+        try {
+            if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null || sqlite.stderr === null) {
+                return reject("Sqlite not defined");
+            }
+            var string_1 = "";
+            var onData_1 = function (data) {
+                string_1 += data.toString();
+                if (string_1.substring(string_1.length - 3) === "EOF") {
+                    cleanup_1();
+                    var jsonString = string_1.slice(0, string_1.length - 3);
+                    if (jsonString.startsWith('"Error: ')) {
+                        return reject(JSON.parse(jsonString));
+                    }
+                    try {
+                        var parsed = JSON.parse(jsonString);
+                        resolve(deserializeBuffers(parsed));
+                    }
+                    catch (e) {
+                        reject(e);
+                    }
+                }
+            };
+            var onErrData_1 = function (data) {
+                cleanup_1();
+                reject(data.toString());
+            };
+            var cleanup_1 = function () {
+                if (sqlite && sqlite.stdout)
+                    sqlite.stdout.off("data", onData_1);
+                if (sqlite && sqlite.stderr)
+                    sqlite.stderr.off("data", onErrData_1);
+            };
+            sqlite.stderr.once("data", onErrData_1);
+            sqlite.stdout.on("data", onData_1);
+            sqlite.stdin.write("".concat(JSON.stringify(commandData), "\n"));
+        }
+        catch (error) {
+            reject(error);
+        }
+    });
 };
 var setdbPath = function (path_1) {
     var args_1 = [];
@@ -73,45 +161,24 @@ var setdbPath = function (path_1) {
         if (autocommit === void 0) { autocommit = true; }
         return __generator(this, function (_a) {
             if (sqlite === null) {
-                sqliteFilePath = join(import.meta.dirname, "..", "sqlite.py");
+                sqliteFilePath = join(__dirname, "..", "sqlite.py");
                 pyPath = "";
                 if (process.platform === "win32") {
-                    pyPath = join(import.meta.dirname, "..", 'python', 'python.exe');
+                    pyPath = join(__dirname, "..", 'python', 'python.exe');
                 }
                 else {
-                    pyPath = join(import.meta.dirname, "..", 'python', 'bin', 'python');
+                    pyPath = join(__dirname, "..", 'python', 'bin', 'python');
                 }
-                sqlite = execFile(pyPath, [sqliteFilePath], { maxBuffer: 10 * 1024 * 1024 });
+                sqlite = execFile(pyPath, [sqliteFilePath], { maxBuffer: 10 * 1024 * 1024, shell: false });
                 if (sqlite !== null) {
-                    process.on("exit", exitHandler.bind(null));
-                    process.on("SIGINT", exitHandler.bind(null));
-                    process.on("SIGUSR1", exitHandler.bind(null));
-                    process.on("SIGUSR2", exitHandler.bind(null));
-                    process.on("uncaughtException", function () {
-                        exitHandler.bind(null);
-                    });
+                    process.once("exit", exitHandler.bind(null));
+                    process.once("SIGINT", exitHandler.bind(null));
+                    process.once("SIGUSR1", exitHandler.bind(null));
+                    process.once("SIGUSR2", exitHandler.bind(null));
+                    process.once("uncaughtException", exitHandler.bind(null));
                 }
             }
-            return [2, new Promise(function (resolve, reject) {
-                try {
-                    if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
-                        return reject("Sqlite not defined");
-                    }
-                    var string_1 = "";
-                    var onData_1 = function (data) {
-                        string_1 += data.toString();
-                        if (string_1.substring(string_1.length - 3) === "EOF") {
-                            resolve(JSON.parse(string_1.split("EOF")[0]));
-                            sqlite.stdout.off("data", onData_1);
-                        }
-                    };
-                    sqlite.stdout.on("data", onData_1);
-                    sqlite.stdin.write("".concat(JSON.stringify(["newConnection", path, isuri, autocommit]), "\n"));
-                }
-                catch (error) {
-                    reject(error);
-                }
-            })];
+            return [2, sendCommand(["newConnection", path, isuri, autocommit])];
         });
     });
 };
@@ -123,41 +190,8 @@ var executeQuery = function (query_1) {
     return __awaiter(void 0, __spreadArray([query_1], args_1, true), void 0, function (query, values) {
         if (values === void 0) { values = []; }
         return __generator(this, function (_a) {
-            return [2, new Promise(function (resolve, reject) {
-                try {
-                    if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
-                        return reject("Sqlite not defined");
-                    }
-                    var string_2 = "";
-                    var onData_2 = function (data) {
-                        string_2 += data.toString();
-                        if (string_2.substring(string_2.length - 3) === "EOF") {
-                            resolve(JSON.parse(string_2.split("EOF")[0]));
-                            sqlite.stdout.off("data", onData_2);
-                        }
-                    };
-                    sqlite.stdout.on("data", onData_2);
-                    if (Array.isArray(values)) {
-                        for (var i = 0; i < values.length; i++) {
-                            if (Buffer.isBuffer(values[i])) {
-                                values[i] = JSON.stringify(values[i]);
-                            }
-                        }
-                    }
-                    else {
-                        var payloadValues = __assign({}, values);
-                        for (var key in payloadValues) {
-                            if (Buffer.isBuffer(payloadValues[key])) {
-                                payloadValues[key] = JSON.stringify(payloadValues[key]);
-                            }
-                        }
-                    }
-                    sqlite.stdin.write("".concat(JSON.stringify(["executeQuery", query, values]), "\n"));
-                }
-                catch (error) {
-                    reject(error);
-                }
-            })];
+            serializeValues(values);
+            return [2, sendCommand(["executeQuery", query, values])];
         });
     });
 };
@@ -169,63 +203,8 @@ var fetchAll = function (query_1) {
     return __awaiter(void 0, __spreadArray([query_1], args_1, true), void 0, function (query, values) {
         if (values === void 0) { values = []; }
         return __generator(this, function (_a) {
-            return [2, new Promise(function (resolve, reject) {
-                try {
-                    if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
-                        return reject("Sqlite not defined");
-                    }
-                    var string_3 = "";
-                    var onData_3 = function (data) {
-                        string_3 += data.toString();
-                        if (string_3.substring(string_3.length - 3) === "EOF") {
-                            var d = JSON.parse(string_3.split("EOF")[0]);
-                            var _loop_1 = function (i) {
-                                var de = d[i];
-                                Object.keys(de).forEach(function (i) {
-                                    var element = de[i];
-                                    if (typeof element === "object" &&
-                                        !Array.isArray(element) &&
-                                        element !== null &&
-                                        element.type == "Buffer" &&
-                                        Array.isArray(element.data)) {
-                                        de[i] = Buffer.from(element.data);
-                                    }
-                                });
-                            };
-                            for (var i = 0; i < d.length; i++) {
-                                _loop_1(i);
-                            }
-                            if (string_3.startsWith('"Error: ')) {
-                                reject(d);
-                            }
-                            else {
-                                resolve(d);
-                            }
-                            sqlite.stdout.off("data", onData_3);
-                        }
-                    };
-                    sqlite.stdout.on("data", onData_3);
-                    if (Array.isArray(values)) {
-                        for (var i = 0; i < values.length; i++) {
-                            if (Buffer.isBuffer(values[i])) {
-                                values[i] = JSON.stringify(values[i]);
-                            }
-                        }
-                    }
-                    else {
-                        var payloadValues = __assign({}, values);
-                        for (var key in payloadValues) {
-                            if (Buffer.isBuffer(payloadValues[key])) {
-                                payloadValues[key] = JSON.stringify(payloadValues[key]);
-                            }
-                        }
-                    }
-                    sqlite.stdin.write("".concat(JSON.stringify(["fetchall", query, values]), "\n"));
-                }
-                catch (error) {
-                    reject(error);
-                }
-            })];
+            serializeValues(values);
+            return [2, sendCommand(["fetchall", query, values])];
         });
     });
 };
@@ -237,57 +216,8 @@ var fetchOne = function (query_1) {
     return __awaiter(void 0, __spreadArray([query_1], args_1, true), void 0, function (query, values) {
         if (values === void 0) { values = []; }
         return __generator(this, function (_a) {
-            return [2, new Promise(function (resolve, reject) {
-                try {
-                    if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
-                        return reject("Sqlite not defined");
-                    }
-                    var string_4 = "";
-                    var onData_4 = function (data) {
-                        string_4 += data.toString();
-                        if (string_4.substring(string_4.length - 3) === "EOF") {
-                            var d_1 = JSON.parse(string_4.split("EOF")[0]);
-                            Object.keys(d_1).forEach(function (key) {
-                                var element = d_1[key];
-                                if (typeof element === "object" &&
-                                    !Array.isArray(element) &&
-                                    element !== null &&
-                                    element.type == "Buffer" &&
-                                    Array.isArray(element.data)) {
-                                    d_1[key] = Buffer.from(element.data);
-                                }
-                            });
-                            if (string_4.startsWith('"Error: ')) {
-                                reject(d_1);
-                            }
-                            else {
-                                resolve(d_1);
-                            }
-                            sqlite.stdout.off("data", onData_4);
-                        }
-                    };
-                    sqlite.stdout.on("data", onData_4);
-                    if (Array.isArray(values)) {
-                        for (var i = 0; i < values.length; i++) {
-                            if (Buffer.isBuffer(values[i])) {
-                                values[i] = JSON.stringify(values[i]);
-                            }
-                        }
-                    }
-                    else {
-                        var payloadValues = __assign({}, values);
-                        for (var key in payloadValues) {
-                            if (Buffer.isBuffer(payloadValues[key])) {
-                                payloadValues[key] = JSON.stringify(payloadValues[key]);
-                            }
-                        }
-                    }
-                    sqlite.stdin.write("".concat(JSON.stringify(["fetchone", query, values]), "\n"));
-                }
-                catch (error) {
-                    reject(error);
-                }
-            })];
+            serializeValues(values);
+            return [2, sendCommand(["fetchone", query, values])];
         });
     });
 };
@@ -299,159 +229,35 @@ var fetchMany = function (query_1, size_1) {
     return __awaiter(void 0, __spreadArray([query_1, size_1], args_1, true), void 0, function (query, size, values) {
         if (values === void 0) { values = []; }
         return __generator(this, function (_a) {
-            return [2, new Promise(function (resolve, reject) {
-                try {
-                    if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
-                        return reject("Sqlite not defined");
-                    }
-                    var string_5 = "";
-                    var onData_5 = function (data) {
-                        string_5 += data.toString();
-                        if (string_5.substring(string_5.length - 3) === "EOF") {
-                            var d = JSON.parse(string_5.split("EOF")[0]);
-                            var _loop_2 = function (i) {
-                                var de = d[i];
-                                Object.keys(de).forEach(function (i) {
-                                    var element = de[i];
-                                    if (typeof element === "object" &&
-                                        !Array.isArray(element) &&
-                                        element !== null &&
-                                        element.type == "Buffer" &&
-                                        Array.isArray(element.data)) {
-                                        de[i] = Buffer.from(element.data);
-                                    }
-                                });
-                            };
-                            for (var i = 0; i < d.length; i++) {
-                                _loop_2(i);
-                            }
-                            if (string_5.startsWith('"Error: ')) {
-                                reject(d);
-                            }
-                            else {
-                                resolve(d);
-                            }
-                            sqlite.stdout.off("data", onData_5);
-                        }
-                    };
-                    sqlite.stdout.on("data", onData_5);
-                    if (Array.isArray(values)) {
-                        for (var i = 0; i < values.length; i++) {
-                            if (Buffer.isBuffer(values[i])) {
-                                values[i] = JSON.stringify(values[i]);
-                            }
-                        }
-                    }
-                    else {
-                        var payloadValues = __assign({}, values);
-                        for (var key in payloadValues) {
-                            if (Buffer.isBuffer(payloadValues[key])) {
-                                payloadValues[key] = JSON.stringify(payloadValues[key]);
-                            }
-                        }
-                    }
-                    sqlite.stdin.write("".concat(JSON.stringify(["fetchmany", query, size, values]), "\n"));
-                }
-                catch (error) {
-                    reject(error);
-                }
-            })];
+            serializeValues(values);
+            return [2, sendCommand(["fetchmany", query, size, values])];
         });
     });
 };
 var executeMany = function (query, values) {
     return __awaiter(void 0, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            return [2, new Promise(function (resolve, reject) {
-                try {
-                    if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
-                        return reject("Sqlite not defined");
-                    }
-                    var string_6 = "";
-                    var onData_6 = function (data) {
-                        string_6 += data.toString();
-                        if (string_6.substring(string_6.length - 3) === "EOF") {
-                            resolve(JSON.parse(string_6.split("EOF")[0]));
-                            sqlite.stdout.off("data", onData_6);
-                        }
-                    };
-                    sqlite.stdout.on("data", onData_6);
-                    for (var j = 0; j < values.length; j++) {
-                        var v = values[j];
-                        if (Array.isArray(v)) {
-                            for (var i = 0; i < v.length; i++) {
-                                if (Buffer.isBuffer(v[i])) {
-                                    v[i] = JSON.stringify(v[i]);
-                                }
-                            }
-                        }
-                        else {
-                            var payloadValues = __assign({}, v);
-                            for (var key in payloadValues) {
-                                if (Buffer.isBuffer(payloadValues[key])) {
-                                    payloadValues[key] = JSON.stringify(payloadValues[key]);
-                                }
-                            }
-                        }
-                    }
-                    sqlite.stdin.write("".concat(JSON.stringify(["executeMany", query, values]), "\n"));
-                }
-                catch (error) {
-                    reject(error);
-                }
-            })];
+            serializeValues(values);
+            return [2, sendCommand(["executeMany", query, values])];
         });
     });
 };
 var executeScript = function (scriptname) {
     return __awaiter(void 0, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            return [2, new Promise(function (resolve, reject) {
-                try {
-                    if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
-                        return reject("Sqlite not defined");
-                    }
-                    var string_7 = "";
-                    var onData_7 = function (data) {
-                        string_7 += data.toString();
-                        if (string_7.substring(string_7.length - 3) === "EOF") {
-                            resolve(JSON.parse(string_7.split("EOF")[0]));
-                            sqlite.stdout.off("data", onData_7);
-                        }
-                    };
-                    sqlite.stdout.on("data", onData_7);
-                    sqlite.stdin.write("".concat(JSON.stringify(["executeScript", scriptname]), "\n"));
-                }
-                catch (error) {
-                    reject(error);
-                }
-            })];
+            return [2, sendCommand(["executeScript", scriptname])];
         });
     });
 };
-var load_extension = function (path) {
-    return __awaiter(void 0, void 0, void 0, function () {
+var load_extension = function (path_1) {
+    var args_1 = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        args_1[_i - 1] = arguments[_i];
+    }
+    return __awaiter(void 0, __spreadArray([path_1], args_1, true), void 0, function (path, entrypoint) {
+        if (entrypoint === void 0) { entrypoint = null; }
         return __generator(this, function (_a) {
-            return [2, new Promise(function (resolve, reject) {
-                try {
-                    if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
-                        return reject("Sqlite not defined");
-                    }
-                    var string_8 = "";
-                    var onData_8 = function (data) {
-                        string_8 += data.toString();
-                        if (string_8.substring(string_8.length - 3) === "EOF") {
-                            resolve(JSON.parse(string_8.split("EOF")[0]));
-                            sqlite.stdout.off("data", onData_8);
-                        }
-                    };
-                    sqlite.stdout.on("data", onData_8);
-                    sqlite.stdin.write("".concat(JSON.stringify(["load_extension", path]), "\n"));
-                }
-                catch (error) {
-                    reject(error);
-                }
-            })];
+            return [2, sendCommand(["load_extension", path, entrypoint])];
         });
     });
 };
@@ -465,26 +271,7 @@ var backup = function (target_1) {
         if (name === void 0) { name = "main"; }
         if (sleep === void 0) { sleep = 0.250; }
         return __generator(this, function (_a) {
-            return [2, new Promise(function (resolve, reject) {
-                try {
-                    if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
-                        return reject("Sqlite not defined");
-                    }
-                    var string_9 = "";
-                    var onData_9 = function (data) {
-                        string_9 += data.toString();
-                        if (string_9.substring(string_9.length - 3) === "EOF") {
-                            resolve(JSON.parse(string_9.split("EOF")[0]));
-                            sqlite.stdout.off("data", onData_9);
-                        }
-                    };
-                    sqlite.stdout.on("data", onData_9);
-                    sqlite.stdin.write("".concat(JSON.stringify(["backup", target, pages, name, sleep]), "\n"));
-                }
-                catch (error) {
-                    reject(error);
-                }
-            })];
+            return [2, sendCommand(["backup", target, pages, name, sleep])];
         });
     });
 };
@@ -496,27 +283,10 @@ var iterdump = function (file_1) {
     return __awaiter(void 0, __spreadArray([file_1], args_1, true), void 0, function (file, filter) {
         if (filter === void 0) { filter = null; }
         return __generator(this, function (_a) {
-            return [2, new Promise(function (resolve, reject) {
-                try {
-                    if (sqlite === null || sqlite.stdin === null || sqlite.stdout === null) {
-                        return reject("Sqlite not defined");
-                    }
-                    var string_10 = "";
-                    var onData_10 = function (data) {
-                        string_10 += data.toString();
-                        if (string_10.substring(string_10.length - 3) === "EOF") {
-                            resolve(JSON.parse(string_10.split("EOF")[0]));
-                            sqlite.stdout.off("data", onData_10);
-                        }
-                    };
-                    sqlite.stdout.on("data", onData_10);
-                    sqlite.stdin.write("".concat(JSON.stringify(["iterdump", file, filter]), "\n"));
-                }
-                catch (error) {
-                    reject(error);
-                }
-            })];
+            return [2, sendCommand(["iterdump", file, filter])];
         });
     });
 };
-export { setdbPath, executeQuery, fetchOne, fetchMany, fetchAll, executeMany, executeScript, load_extension, backup, iterdump, };
+export { setdbPath, executeQuery, fetchOne, fetchMany, fetchAll, executeMany, executeScript, load_extension, backup, iterdump };
+
+export default { setdbPath, executeQuery, fetchOne, fetchMany, fetchAll, executeMany, executeScript, load_extension, backup, iterdump }
